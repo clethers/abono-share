@@ -32,9 +32,9 @@ import { useDropzone } from 'react-dropzone';
 
 const MOCK_USER = {
   uid: 'user_123',
-  displayName: 'Alex Thompson',
-  email: 'alex@example.com',
-  photoURL: 'https://picsum.photos/seed/alex/200/200',
+  displayName: 'Juan dela Cruz',
+  email: 'juan@example.com',
+  photoURL: 'https://picsum.photos/seed/juan/200/200',
   qrCodes: {
     primary: 'https://picsum.photos/seed/qr1/400/400',
     secondary: '',
@@ -46,16 +46,16 @@ const MOCK_USERS = {
   'user_123': MOCK_USER,
   'recipient_456': {
     uid: 'recipient_456',
-    displayName: 'Jordan Lee',
-    email: 'jordan@example.com',
-    photoURL: 'https://picsum.photos/seed/jordan/200/200',
+    displayName: 'Maria Santos',
+    email: 'maria@example.com',
+    photoURL: 'https://picsum.photos/seed/maria/200/200',
     qrCodes: { primary: 'https://picsum.photos/seed/qr2/400/400' }
   },
   'sender_789': {
     uid: 'sender_789',
-    displayName: 'Sam Rivera',
-    email: 'sam@example.com',
-    photoURL: 'https://picsum.photos/seed/sam/200/200',
+    displayName: 'Jose Reyes',
+    email: 'jose@example.com',
+    photoURL: 'https://picsum.photos/seed/jose/200/200',
     qrCodes: { primary: 'https://picsum.photos/seed/qr3/400/400' }
   }
 };
@@ -602,7 +602,7 @@ export default function AbonoShareApp() {
                           type="text"
                           required
                           defaultValue={registrationData.displayName}
-                          placeholder="e.g. Alex Thompson"
+                          placeholder="e.g. Juan dela Cruz"
                           className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
                         />
                       </div>
@@ -634,7 +634,7 @@ export default function AbonoShareApp() {
                           name="email"
                           type="email"
                           defaultValue={registrationData.email}
-                          placeholder="alex@example.com"
+                          placeholder="juan@example.com"
                           className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
                         />
                       </div>

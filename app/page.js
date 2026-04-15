@@ -97,9 +97,9 @@ function DashboardScreen() {
       <div className="mx-3 mt-3 bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden flex-1">
         <p className="text-[8px] font-bold uppercase tracking-widest text-[#6C727A] px-3 py-2 border-b border-[#E2E8F0]">Settlement Ledger</p>
         {[
-          { name: 'Jordan Lee', amount: '₱1,250', status: 'Unpaid', color: 'bg-red-50 text-red-600' },
-          { name: 'Sam Rivera', amount: '₱450', status: 'Pending', color: 'bg-amber-50 text-amber-600' },
-          { name: 'Jordan Lee', amount: '₱1,500', status: 'Settled', color: 'bg-emerald-50 text-emerald-600' },
+          { name: 'Maria Santos', amount: '₱1,250', status: 'Unpaid', color: 'bg-red-50 text-red-600' },
+          { name: 'Jose Reyes', amount: '₱450', status: 'Pending', color: 'bg-amber-50 text-amber-600' },
+          { name: 'Maria Santos', amount: '₱1,500', status: 'Settled', color: 'bg-emerald-50 text-emerald-600' },
         ].map((tx, i) => (
           <div key={i} className="flex items-center justify-between px-3 py-2.5 border-b border-[#F4F7F9] last:border-0">
             <div>
@@ -139,7 +139,7 @@ function SettleScreen() {
         </div>
         <div className="text-right">
           <p className="text-[6px] uppercase tracking-widest opacity-70 font-bold">Recipient</p>
-          <p className="text-[10px] font-bold">Jordan Lee</p>
+          <p className="text-[10px] font-bold">Maria Santos</p>
         </div>
       </div>
       {/* QR card */}
