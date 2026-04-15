@@ -513,7 +513,7 @@ export default function AbonoShareApp() {
     if (!newGroupName) return;
     setLoading(true);
     try {
-      await createGroup(supabase, newGroupName, user.id);
+      await createGroup(supabase, newGroupName, user.id, newGroupIsPublic);
       const refreshed = await getGroups(supabase);
       setGroups(refreshed);
     } catch (err) {
@@ -522,6 +522,7 @@ export default function AbonoShareApp() {
       setLoading(false);
     }
     setNewGroupName('');
+    setNewGroupIsPublic(true);
     setIsAddingGroup(false);
   };
 
@@ -1672,8 +1673,8 @@ export default function AbonoShareApp() {
                       <form onSubmit={handleCreateGroup} className="space-y-6">
                         <div className="space-y-2">
                           <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Group Name</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             required
                             autoFocus
                             value={newGroupName}
@@ -1681,6 +1682,26 @@ export default function AbonoShareApp() {
                             placeholder="e.g. Household Expenses"
                             className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Visibility</label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setNewGroupIsPublic(true)}
+                              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${newGroupIsPublic ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-[#F8FAFC]/50 border border-border-theme text-ink-secondary'}`}
+                            >
+                              Public
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewGroupIsPublic(false)}
+                              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${!newGroupIsPublic ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-[#F8FAFC]/50 border border-border-theme text-ink-secondary'}`}
+                            >
+                              Invite-only
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-ink-secondary">{newGroupIsPublic ? 'Anyone can find and apply to join.' : 'Hidden from discovery. Add members manually.'}</p>
                         </div>
                         <div className="flex gap-3">
                           <button 
