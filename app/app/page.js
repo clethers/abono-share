@@ -1238,6 +1238,79 @@ export default function AbonoShareApp() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                {/* Join Requests — visible to creator only */}
+                {selectedGroup.created_by === user.id && joinRequests.filter(r => r.group_id === selectedGroup.id).length > 0 && (
+                  <section className="card-theme glass lg:col-span-2">
+                    <div className="card-header-theme flex items-center justify-between">
+                      <span>Join Requests</span>
+                      <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
+                        {joinRequests.filter(r => r.group_id === selectedGroup.id).length} pending
+                      </span>
+                    </div>
+                    <div className="divide-y divide-border-theme">
+                      {joinRequests.filter(r => r.group_id === selectedGroup.id).map(req => (
+                        <div key={req.id} className="p-4 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[11px] font-black shrink-0">
+                              {(req.profiles?.display_name || '?').slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-ink-primary">{req.profiles?.display_name || req.user_id.slice(0, 8)}</p>
+                              {req.message && (
+                                <p className="text-xs text-ink-secondary italic mt-0.5 line-clamp-2">&ldquo;{req.message}&rdquo;</p>
+                              )}
+                              <p className="text-[10px] text-ink-secondary mt-0.5">{new Date(req.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                try {
+                                  await approveJoinRequest(supabase, req.id, req.group_id, req.user_id);
+                                  const [grps, requests] = await Promise.all([
+                                    getGroups(supabase),
+                                    getJoinRequests(supabase),
+                                  ]);
+                                  setGroups(grps);
+                                  setJoinRequests(requests);
+                                  setSelectedGroup(grps.find(g => g.id === selectedGroup.id) || null);
+                                } catch (err) {
+                                  console.error('Failed to approve:', err);
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                              disabled={loading}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                try {
+                                  await declineJoinRequest(supabase, req.id);
+                                  const refreshed = await getJoinRequests(supabase);
+                                  setJoinRequests(refreshed);
+                                } catch (err) {
+                                  console.error('Failed to decline:', err);
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-surface text-ink-secondary rounded-lg text-xs font-bold hover:bg-border-theme transition-colors disabled:opacity-50"
+                              disabled={loading}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {/* Members Section */}
                 <section className="card-theme lg:col-span-1 h-fit order-2 lg:order-1">
                   <div className="card-header-theme flex justify-between items-center">
