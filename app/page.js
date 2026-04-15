@@ -11,6 +11,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import ThemeToggle from './components/ThemeToggle';
+import { createClient } from '../lib/supabase/server';
 
 const features = [
   {
@@ -214,7 +215,20 @@ function GroupScreen() {
   );
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  let topGroups = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('groups')
+      .select('id, name, total_settled, group_members(user_id)')
+      .order('total_settled', { ascending: false })
+      .limit(5);
+    topGroups = data || [];
+  } catch {
+    // leaderboard is non-critical — fail silently
+  }
+
   return (
     <div className="min-h-screen bg-[#F4F7F9] dark:bg-[#0F172A] text-[#1A1C1E] dark:text-[#F8FAFC] font-sans transition-colors duration-300">
 
@@ -325,6 +339,55 @@ export default function LandingPage() {
               <p className="text-sm text-[#6C727A] dark:text-[#94A3B8] leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Live Leaderboard Teaser */}
+      <section className="bg-[#0F172A] px-5 sm:px-10 lg:px-16 py-20">
+        <div className="max-w-3xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#2563EB]">Community</p>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">Groups are already thriving</h2>
+            <p className="text-[#94A3B8]">See who&apos;s splitting the most. Join them.</p>
+          </div>
+
+          {topGroups.length > 0 ? (
+            <div className="space-y-3">
+              {topGroups.map((group, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+                const memberCount = (group.group_members || []).length;
+                return (
+                  <div key={group.id} className="flex items-center justify-between px-5 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 flex items-center justify-center font-black text-lg shrink-0">
+                        {medal || <span className="text-sm text-[#64748B] font-bold">#{index + 1}</span>}
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm">{group.name}</p>
+                        <p className="text-[11px] text-[#64748B]">{memberCount} member{memberCount !== 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-[#2563EB] text-base">₱{Number(group.total_settled).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                      <p className="text-[10px] text-[#64748B] uppercase tracking-wider">settled</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-[#64748B] text-sm">Be the first group on the leaderboard.</div>
+          )}
+
+          <div className="text-center">
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold text-base shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all"
+            >
+              Join the community
+              <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
       </section>
 
