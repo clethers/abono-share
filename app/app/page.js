@@ -357,6 +357,19 @@ export default function AbonoShareApp() {
     // onAuthStateChange handles setting user on success
   };
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setAuthError('');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: 'demo@abonoshare.app',
+      password: 'Demo1234!',
+    });
+    if (error) {
+      setAuthError('Demo account unavailable. Please sign up or use your own account.');
+      setLoading(false);
+    }
+  };
+
   const handleRegister = async (userData) => {
     setLoading(true);
     setAuthError('');
@@ -770,6 +783,27 @@ export default function AbonoShareApp() {
             {authError && (
               <p className="text-xs text-red-500 text-center">{authError}</p>
             )}
+
+            {/* Demo quick-access */}
+            <button
+              onClick={handleDemoLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface border border-border-theme rounded-2xl shadow-sm hover:bg-bg-main transition-all font-bold text-ink-primary disabled:opacity-50"
+            >
+              <User size={20} className="text-brand" />
+              Sign in to Demo
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border-theme"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-bg-main px-2 text-ink-secondary font-bold tracking-widest">Or</span>
+              </div>
+            </div>
+
+            {/* Real account sign-in */}
             <form onSubmit={handleLogin} className="space-y-3">
               <input
                 type="email"
@@ -790,9 +824,9 @@ export default function AbonoShareApp() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface border border-border-theme rounded-2xl shadow-sm hover:bg-bg-main transition-all font-bold text-ink-primary disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 hover:scale-[1.02] transition-all font-bold disabled:opacity-50"
               >
-                <User size={20} className="text-brand" />
+                <User size={20} />
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
@@ -808,11 +842,15 @@ export default function AbonoShareApp() {
 
             <button
               onClick={() => setIsRegistering(true)}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 hover:scale-[1.02] transition-all font-bold"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface border border-border-theme rounded-2xl shadow-sm hover:bg-bg-main transition-all font-bold text-ink-primary"
             >
-              <UserPlus size={20} />
+              <UserPlus size={20} className="text-brand" />
               Create New Account
             </button>
+
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary text-center pt-1">
+              Your data is stored securely in the cloud. Demo account is read-only.
+            </p>
           </div>
         </div>
       </div>
