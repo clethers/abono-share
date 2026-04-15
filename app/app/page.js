@@ -220,7 +220,7 @@ export default function AbonoShareApp() {
   const [authError, setAuthError] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail, discover
+  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail, discover, settings
   const [selectedTx, setSelectedTx] = useState(null);
   const [receiptSignedUrl, setReceiptSignedUrl] = useState(null);
   const [balanceCounterparty, setBalanceCounterparty] = useState(null);
@@ -230,6 +230,11 @@ export default function AbonoShareApp() {
   const [applyMessage, setApplyMessage] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
   const [newGroupIsPublic, setNewGroupIsPublic] = useState(true);
+  const [isManagingQr, setIsManagingQr] = useState(false);
+  const [qrUploading, setQrUploading] = useState(null); // 'primary' | 'secondary' | 'tertiary' | null
+  const [settingsName, setSettingsName] = useState('');
+  const [settingsPhone, setSettingsPhone] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [settleStep, setSettleStep] = useState('qr'); // qr, upload
 
@@ -267,6 +272,14 @@ export default function AbonoShareApp() {
     }
     localStorage.setItem('abonoshare_dark_mode', darkMode);
   }, [darkMode]);
+
+  // Sync settings form when entering settings view
+  useEffect(() => {
+    if (activeView === 'settings' && user) {
+      setSettingsName(user.display_name || '');
+      setSettingsPhone(user.mobile || '');
+    }
+  }, [activeView, user]);
 
   // Load session + data on mount; keep in sync with auth state changes
   useEffect(() => {
@@ -384,7 +397,7 @@ export default function AbonoShareApp() {
       password: 'Demo1234!',
     });
     if (error) {
-      setAuthError('Demo account unavailable. Please sign up or use your own account.');
+      setAuthError(`Demo login failed: ${error.message}`);
       setLoading(false);
     }
   };
@@ -984,7 +997,10 @@ export default function AbonoShareApp() {
             Discover
           </button>
           <div className="mt-auto pt-4 border-t border-border-theme">
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-ink-secondary hover:bg-surface hover:text-ink-primary transition-all w-full">
+            <button
+              onClick={() => setActiveView('settings')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all w-full ${activeView === 'settings' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
+            >
               <Settings size={18} />
               Settings
             </button>
@@ -1028,7 +1044,10 @@ export default function AbonoShareApp() {
             <Search size={22} />
             <span className="text-[10px] font-bold uppercase tracking-wide">Discover</span>
           </button>
-          <button className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-ink-secondary">
+          <button
+            onClick={() => setActiveView('settings')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'settings' ? 'text-brand' : 'text-ink-secondary'}`}
+          >
             <Settings size={22} />
             <span className="text-[10px] font-bold uppercase tracking-wide">Settings</span>
           </button>
@@ -1153,7 +1172,7 @@ export default function AbonoShareApp() {
                   <section className="card-theme lg:col-span-2 glass">
                     <div className="card-header-theme py-3 px-6 border-b border-border-theme flex justify-between items-center">
                       <span className="text-[10px] font-bold uppercase tracking-widest">Quick Payment Slots</span>
-                      <button className="text-[10px] font-bold text-brand uppercase tracking-widest hover:underline">Manage</button>
+                      <button onClick={() => setIsManagingQr(true)} className="text-[10px] font-bold text-brand uppercase tracking-widest hover:underline">Manage</button>
                     </div>
                     <div className="p-4 grid grid-cols-3 gap-3">
                       {['Primary', 'Secondary', 'Tertiary'].map((label, i) => (
@@ -1726,6 +1745,140 @@ export default function AbonoShareApp() {
             </motion.div>
           )}
 
+          {activeView === 'settings' && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6 max-w-lg mx-auto"
+            >
+              <h2 className="text-xl font-black text-ink-primary">Settings</h2>
+
+              {/* Profile */}
+              <section className="card-theme glass space-y-4">
+                <div className="card-header-theme">Profile</div>
+                <div className="px-4 pb-4 space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Display Name</label>
+                    <input
+                      type="text"
+                      value={settingsName}
+                      onChange={(e) => setSettingsName(e.target.value)}
+                      placeholder={user?.display_name || 'Your name'}
+                      className="w-full px-4 py-3 bg-surface border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile Number</label>
+                    <input
+                      type="text"
+                      value={settingsPhone}
+                      onChange={(e) => setSettingsPhone(e.target.value)}
+                      placeholder={user?.mobile || '+63XXXXXXXXXX'}
+                      className="w-full px-4 py-3 bg-surface border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                    />
+                  </div>
+                  <button
+                    disabled={settingsSaving}
+                    onClick={async () => {
+                      setSettingsSaving(true);
+                      try {
+                        const updated = await updateProfile(supabase, user.id, {
+                          display_name: settingsName,
+                          mobile: settingsPhone,
+                        });
+                        setUser(prev => ({ ...prev, ...updated }));
+                      } catch (err) {
+                        console.error('Failed to update profile:', err);
+                      } finally {
+                        setSettingsSaving(false);
+                      }
+                    }}
+                    className="w-full py-3 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20 disabled:opacity-50 hover:scale-[1.01] transition-all"
+                  >
+                    {settingsSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </section>
+
+              {/* Privacy */}
+              <section className="card-theme glass">
+                <div className="card-header-theme">Privacy</div>
+                <div className="px-4 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-ink-primary">Discoverable</p>
+                    <p className="text-xs text-ink-secondary">Let others find you by mobile number</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const next = !user?.discoverable;
+                      setUser(prev => ({ ...prev, discoverable: next }));
+                      await updateProfile(supabase, user.id, { discoverable: next });
+                    }}
+                    className={`relative w-12 h-6 rounded-full transition-all ${user?.discoverable ? 'bg-brand' : 'bg-border-theme'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${user?.discoverable ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+              </section>
+
+              {/* Appearance */}
+              <section className="card-theme glass">
+                <div className="card-header-theme">Appearance</div>
+                <div className="px-4 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-ink-primary">Dark Mode</p>
+                    <p className="text-xs text-ink-secondary">Switch between light and dark theme</p>
+                  </div>
+                  <button
+                    onClick={() => setDarkMode(d => !d)}
+                    className={`relative w-12 h-6 rounded-full transition-all ${darkMode ? 'bg-brand' : 'bg-border-theme'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${darkMode ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+              </section>
+
+              {/* Payment Slots */}
+              <section className="card-theme glass">
+                <div className="card-header-theme flex items-center justify-between">
+                  <span>Payment QR Codes</span>
+                  <button onClick={() => setIsManagingQr(true)} className="text-[10px] font-bold text-brand uppercase tracking-widest hover:underline">Manage</button>
+                </div>
+                <div className="p-4 grid grid-cols-3 gap-3">
+                  {['primary', 'secondary', 'tertiary'].map((slot) => (
+                    <div
+                      key={slot}
+                      onClick={() => setIsManagingQr(true)}
+                      className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-border-theme cursor-pointer hover:border-brand transition-all group"
+                    >
+                      {user?.qrCodes?.[slot] ? (
+                        <img src={user.qrCodes[slot]} alt={slot} className="w-10 h-10 object-contain rounded" />
+                      ) : (
+                        <QrCode size={20} className="text-ink-secondary group-hover:text-brand transition-colors" />
+                      )}
+                      <span className="text-[9px] font-bold uppercase tracking-tighter text-ink-secondary group-hover:text-ink-primary capitalize">{slot}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Sign Out */}
+              <section className="card-theme glass">
+                <div className="px-4 py-4">
+                  <button
+                    onClick={() => supabase.auth.signOut()}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              </section>
+            </motion.div>
+          )}
+
           {activeView === 'discover' && (
             <motion.div
               key="discover"
@@ -2125,6 +2278,80 @@ export default function AbonoShareApp() {
       </div>
     </main>
 
+          {/* Manage QR Codes Modal */}
+          <AnimatePresence>
+            {isManagingQr && (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsManagingQr(false)}
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ y: '100%', opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: '100%', opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                  className="relative w-full sm:max-w-sm glass rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6 space-y-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-black text-ink-primary">Payment QR Codes</h3>
+                    <button onClick={() => setIsManagingQr(false)} className="text-ink-secondary hover:text-ink-primary transition-colors">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-ink-secondary">Upload your GCash, Maya, or bank QR codes so others can pay you directly.</p>
+                  <div className="space-y-3">
+                    {['primary', 'secondary', 'tertiary'].map((slot) => (
+                      <div key={slot} className="flex items-center gap-4 p-3 bg-surface rounded-2xl border border-border-theme">
+                        <div className="w-14 h-14 rounded-xl bg-white border border-border-theme flex items-center justify-center overflow-hidden shrink-0">
+                          {user?.qrCodes?.[slot] ? (
+                            <img src={user.qrCodes[slot]} alt={slot} className="w-full h-full object-contain" />
+                          ) : (
+                            <QrCode size={22} className="text-ink-secondary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-ink-primary capitalize">{slot}</p>
+                          <p className="text-[10px] text-ink-secondary">{user?.qrCodes?.[slot] ? 'Uploaded' : 'No QR yet'}</p>
+                        </div>
+                        <label className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all ${qrUploading === slot ? 'opacity-50 pointer-events-none' : 'bg-brand/10 text-brand hover:bg-brand/20'}`}>
+                          <Upload size={13} />
+                          {qrUploading === slot ? 'Uploading...' : user?.qrCodes?.[slot] ? 'Replace' : 'Upload'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setQrUploading(slot);
+                              try {
+                                const path = await uploadQrCode(supabase, user.id, slot, file);
+                                const url = await getQrSignedUrl(supabase, path);
+                                setUser(prev => ({
+                                  ...prev,
+                                  qrCodes: { ...prev.qrCodes, [slot]: url },
+                                }));
+                              } catch (err) {
+                                console.error('Failed to upload QR:', err);
+                              } finally {
+                                setQrUploading(null);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* Group Profile Sheet */}
           <AnimatePresence>
             {viewingGroup && (
@@ -2259,7 +2486,7 @@ export default function AbonoShareApp() {
           </AnimatePresence>
 
       {/* Floating Action for Mobile */}
-      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail' || activeView === 'discover') && (
+      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail' || activeView === 'discover' || activeView === 'settings') && (
         <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-50">
           <button 
             onClick={createNewBill}
