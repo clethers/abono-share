@@ -763,7 +763,7 @@ export default function AbonoShareApp() {
               <ShieldCheck size={32} />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-ink-primary">AbonoShare</h1>
-            <p className="text-ink-secondary">High-trust bill splitting with receipt verification.</p>
+            <p className="text-ink-secondary">Split the bill, keep the friends.</p>
           </div>
           
           <div className="space-y-4">

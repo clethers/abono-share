@@ -245,14 +245,14 @@ export default function LandingPage() {
           <div className="flex-1 text-center lg:text-left space-y-6 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-[#2563EB] rounded-full text-xs font-bold border border-blue-100">
               <ShieldCheck size={13} />
-              High-trust bill splitting
+              Para sa tropang walang iwanan sa bayaran.
             </div>
             <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-[#1A1C1E] dark:text-white leading-[1.05]">
-              Split bills.<br />
-              <span className="text-[#2563EB]">Not trust.</span>
+              Split the bill,<br />
+              <span className="text-[#2563EB]">keep the friends.</span>
             </h1>
             <p className="text-lg text-[#6C727A] dark:text-[#94A3B8] leading-relaxed">
-              AbonoShare makes every peso traceable. Mandatory receipt verification, QR code payments, and settlement history — so no one ever has to take anyone's word for it.
+              Eat together. Pay apart. AbonoShare makes every peso traceable — mandatory receipt verification, QR payments, and settlement history so no one ever has to take anyone's word for it.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Link
@@ -334,10 +334,11 @@ export default function LandingPage() {
           <div className="flex-1 text-center lg:text-left space-y-6">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#2563EB] mb-3">The App</p>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-              Designed for your phone. Ready for the real world.
+              Math-free meals.<br />
+              <span className="text-[#2563EB]">Smart splitting for every outing.</span>
             </h2>
             <p className="text-[#94A3B8] leading-relaxed">
-              A native-feel experience that works on any Android or iOS device — no install required. Open it in your browser and it just works.
+              Fair share, simplified. A native-feel experience that works on any Android or iOS device — no install required. Open it in your browser and it just works.
             </p>
             <ul className="space-y-3">
               {[
@@ -370,9 +371,9 @@ export default function LandingPage() {
           <ShieldCheck size={32} />
         </div>
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E] dark:text-white">
-          Ready to split the right way?
+          Good times, evened out.
         </h2>
-        <p className="text-lg text-[#6C727A] dark:text-[#94A3B8]">No sign-up friction. Open the app and start settling in seconds.</p>
+        <p className="text-lg text-[#6C727A] dark:text-[#94A3B8]">Keep your change. And your friendships. Open the app and start settling in seconds.</p>
         <Link
           href="/app"
           className="inline-flex items-center gap-3 px-10 py-5 bg-[#2563EB] text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all active:scale-95"
@@ -391,7 +392,7 @@ export default function LandingPage() {
           </div>
           AbonoShare
         </div>
-        <p className="text-xs">© {new Date().getFullYear()} AbonoShare. Built for high-trust settlements.</p>
+        <p className="text-xs">© {new Date().getFullYear()} AbonoShare · Built by <span className="font-bold text-[#1A1C1E] dark:text-white">Remarx Foundation</span></p>
         <Link href="/app" className="text-[#2563EB] font-bold hover:underline text-xs">
           Open App →
         </Link>
