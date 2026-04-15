@@ -2259,7 +2259,7 @@ export default function AbonoShareApp() {
           </AnimatePresence>
 
       {/* Floating Action for Mobile */}
-      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail') && (
+      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail' || activeView === 'discover') && (
         <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-50">
           <button 
             onClick={createNewBill}
