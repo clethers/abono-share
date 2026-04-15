@@ -592,7 +592,7 @@ export default function AbonoShareApp() {
     }
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 bg-bg-main p-6">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-bg-main px-5 py-10 safe-top">
         <div className="w-full max-w-md space-y-8 text-center">
           <div className="space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-brand text-white rounded-2xl shadow-lg mb-4">
@@ -636,17 +636,17 @@ export default function AbonoShareApp() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-bg-main font-sans text-ink-primary overflow-hidden transition-colors duration-300">
+    <div className="h-[100dvh] flex flex-col bg-bg-main font-sans text-ink-primary overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <header className="h-12 shrink-0 glass border-b border-border-theme px-4 sm:px-8 flex items-center justify-between z-30">
-        <div className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tighter">
+      <header className="header-safe shrink-0 glass border-b border-border-theme px-4 sm:px-6 flex items-center justify-between z-30 min-h-[52px]">
+        <div className="flex items-center gap-2 font-bold text-lg tracking-tighter">
           <div className="w-5 h-5 bg-brand rounded-[4px]" />
           AbonoShare
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 text-[12px] sm:text-[13px] font-medium">
-          <button 
+        <div className="flex items-center gap-2 text-[12px] font-medium">
+          <button
             onClick={() => setDarkMode(!darkMode)}
-            className="p-2 text-ink-secondary hover:text-ink-primary transition-all bg-surface/50 rounded-lg border border-border-theme relative overflow-hidden group"
+            className="w-9 h-9 flex items-center justify-center text-ink-secondary hover:text-ink-primary transition-all bg-surface/50 rounded-lg border border-border-theme"
             aria-label="Toggle Dark Mode"
           >
             <motion.div
@@ -657,12 +657,11 @@ export default function AbonoShareApp() {
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-brand" />}
             </motion.div>
           </button>
-          <span className="text-ink-secondary hidden xs:inline">Audit #4489</span>
-          <div className="flex items-center gap-2">
-            <span className="max-w-[80px] truncate">{user.displayName}</span>
-            <button 
+          <div className="flex items-center gap-1.5">
+            <span className="max-w-[100px] sm:max-w-none truncate text-ink-primary font-bold">{user.displayName.split(' ')[0]}</span>
+            <button
               onClick={handleLogout}
-              className="p-2 text-ink-secondary hover:text-ink-primary transition-colors"
+              className="w-9 h-9 flex items-center justify-center text-ink-secondary hover:text-ink-primary transition-colors"
               aria-label="Logout"
             >
               <LogOut size={16} />
@@ -696,7 +695,7 @@ export default function AbonoShareApp() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-0 pb-4 sm:px-6 sm:py-4 flex flex-col md:flex-row gap-6 overflow-hidden">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-6 pt-0 pb-0 flex flex-col md:flex-row gap-6 overflow-hidden">
         {/* Navigation Rail */}
         <nav className="hidden md:flex flex-col gap-2 w-52 shrink-0 overflow-y-auto px-3 py-2 custom-scrollbar">
           <button 
@@ -737,35 +736,35 @@ export default function AbonoShareApp() {
         </nav>
 
         {/* Mobile Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border-theme px-6 py-3 flex justify-around items-center z-40">
-          <button 
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border-theme px-2 pt-2 bottom-nav-safe flex justify-around items-center z-40">
+          <button
             onClick={() => setActiveView('dashboard')}
-            className={`flex flex-col items-center gap-1 ${activeView === 'dashboard' ? 'text-brand' : 'text-ink-secondary'}`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'dashboard' ? 'text-brand' : 'text-ink-secondary'}`}
           >
-            <CreditCard size={20} />
-            <span className="text-[10px] font-bold uppercase">Ledger</span>
+            <CreditCard size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Ledger</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveView('active')}
-            className={`flex flex-col items-center gap-1 ${activeView === 'active' ? 'text-brand' : 'text-ink-secondary'}`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'active' ? 'text-brand' : 'text-ink-secondary'}`}
           >
-            <Clock size={20} />
-            <span className="text-[10px] font-bold uppercase">Active</span>
+            <Clock size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Active</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveView('groups')}
-            className={`flex flex-col items-center gap-1 ${activeView === 'groups' ? 'text-brand' : 'text-ink-secondary'}`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'groups' ? 'text-brand' : 'text-ink-secondary'}`}
           >
-            <UsersRound size={20} />
-            <span className="text-[10px] font-bold uppercase">Groups</span>
+            <UsersRound size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Groups</span>
           </button>
-          <button className="flex flex-col items-center gap-1 text-ink-secondary">
-            <Settings size={20} />
-            <span className="text-[10px] font-bold uppercase">Settings</span>
+          <button className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-ink-secondary">
+            <Settings size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Settings</span>
           </button>
         </nav>
 
-        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden pb-32 md:pb-8 pr-1">
+        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden scroll-container pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8 pr-1 md:py-4">
           <AnimatePresence mode="wait">
             {activeView === 'active' && (
               <motion.div 
@@ -775,8 +774,8 @@ export default function AbonoShareApp() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="card-theme p-6 glass border-l-4 border-l-brand">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="card-theme p-4 sm:p-6 glass border-l-4 border-l-brand">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-brand/10 text-brand rounded-lg">
                         <Clock size={16} />
@@ -787,7 +786,7 @@ export default function AbonoShareApp() {
                       ₱{transactions.filter(tx => tx.status !== 'settled').reduce((acc, tx) => acc + tx.amount, 0).toFixed(2)}
                     </p>
                   </div>
-                  <div className="card-theme p-6 glass border-l-4 border-l-amber-400">
+                  <div className="card-theme p-4 sm:p-6 glass border-l-4 border-l-amber-400">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
                         <AlertCircle size={16} />
@@ -798,7 +797,7 @@ export default function AbonoShareApp() {
                       {transactions.filter(tx => tx.status !== 'settled').length}
                     </p>
                   </div>
-                  <div className="card-theme p-6 glass border-l-4 border-l-emerald-500">
+                  <div className="card-theme p-4 sm:p-6 glass border-l-4 border-l-emerald-500">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                         <CheckCircle2 size={16} />
@@ -866,9 +865,9 @@ export default function AbonoShareApp() {
                 className="space-y-6"
               >
                 {/* Top Row: User Summary & Payment Slots */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* User Summary Card */}
-                  <section className="card-theme glass p-6 flex flex-col justify-between min-h-[160px]">
+                  <section className="card-theme glass p-5 sm:p-6 flex flex-col justify-between min-h-[130px] sm:min-h-[160px]">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Your Balance</p>
                       <p className="text-3xl font-black text-ink-primary">
@@ -973,9 +972,9 @@ export default function AbonoShareApp() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Members Section */}
-                <section className="card-theme lg:col-span-1 h-fit">
+                <section className="card-theme lg:col-span-1 h-fit order-2 lg:order-1">
                   <div className="card-header-theme flex justify-between items-center">
                     <span>Members</span>
                     <button 
@@ -1024,7 +1023,7 @@ export default function AbonoShareApp() {
                 </section>
 
                 {/* Group Ledger */}
-                <section className="card-theme lg:col-span-2 glass">
+                <section className="card-theme lg:col-span-2 glass order-1 lg:order-2">
                   <div className="card-header-theme">Group Ledger</div>
                   <div className="divide-y divide-border-theme">
                     {transactions.filter(tx => tx.groupId === selectedGroup.id).length === 0 ? (
@@ -1083,9 +1082,9 @@ export default function AbonoShareApp() {
                       initial={{ scale: 0.9, opacity: 0, y: 20 }}
                       animate={{ scale: 1, opacity: 1, y: 0 }}
                       exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                      className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden"
+                      className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden mx-2"
                     >
-                      <div className="p-8 space-y-6">
+                      <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-2xl bg-brand/10 overflow-hidden border border-brand/20">
@@ -1172,9 +1171,9 @@ export default function AbonoShareApp() {
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.9, opacity: 0 }}
-                      className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-8"
+                      className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-8 mx-2"
                     >
-                      <div className="flex items-center gap-3 mb-6">
+                      <div className="flex items-center gap-3 mb-5 sm:mb-6">
                         <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
                           <UserPlus size={20} />
                         </div>
@@ -1240,20 +1239,20 @@ export default function AbonoShareApp() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="card-theme p-6 glass">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Total Groups</p>
-                  <p className="text-2xl font-black text-ink-primary">{groups.length}</p>
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="card-theme p-4 sm:p-6 glass">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Groups</p>
+                  <p className="text-xl sm:text-2xl font-black text-ink-primary">{groups.length}</p>
                 </div>
-                <div className="card-theme p-6 glass">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Active Members</p>
-                  <p className="text-2xl font-black text-ink-primary">
+                <div className="card-theme p-4 sm:p-6 glass">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Members</p>
+                  <p className="text-xl sm:text-2xl font-black text-ink-primary">
                     {new Set(groups.flatMap(g => g.members)).size}
                   </p>
                 </div>
-                <div className="card-theme p-6 glass">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Group Volume</p>
-                  <p className="text-2xl font-black text-brand">₱{groups.reduce((acc, g) => acc + g.totalSpent, 0).toLocaleString()}</p>
+                <div className="card-theme p-4 sm:p-6 glass">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Volume</p>
+                  <p className="text-xl sm:text-2xl font-black text-brand truncate">₱{groups.reduce((acc, g) => acc + g.totalSpent, 0).toLocaleString()}</p>
                 </div>
               </div>
 
@@ -1321,9 +1320,9 @@ export default function AbonoShareApp() {
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.9, opacity: 0 }}
-                      className="relative w-full max-w-sm glass rounded-3xl shadow-2xl overflow-hidden p-8"
+                      className="relative w-full max-w-sm glass rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-8 mx-2"
                     >
-                      <h3 className="text-xl font-black text-ink-primary mb-6">Create New Group</h3>
+                      <h3 className="text-xl font-black text-ink-primary mb-5 sm:mb-6">Create New Group</h3>
                       <form onSubmit={handleCreateGroup} className="space-y-6">
                         <div className="space-y-2">
                           <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Group Name</label>
@@ -1373,7 +1372,7 @@ export default function AbonoShareApp() {
                 <div className="card-header-theme">Step 1: Settle Up</div>
                 <div className="p-6 sm:p-8 text-center space-y-6">
                   <span className="inline-block px-3 py-1 bg-[#EFF6FF]/50 text-brand rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">Primary QR (Zelle)</span>
-                  <div className="w-40 h-40 sm:w-48 sm:h-48 mx-auto border-8 border-ink-primary bg-white flex items-center justify-center relative shadow-lg">
+                  <div className="w-36 h-36 sm:w-48 sm:h-48 mx-auto border-8 border-ink-primary bg-white flex items-center justify-center relative shadow-lg">
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)', backgroundSize: '16px 16px' }} />
                     <QrCode size={56} className="text-ink-primary relative z-10" />
                   </div>
@@ -1435,23 +1434,23 @@ export default function AbonoShareApp() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Main Detail Card */}
                 <section className="card-theme lg:col-span-2 glass overflow-hidden">
                   <div className="card-header-theme">Transaction Detail</div>
-                  <div className="p-8 space-y-8">
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
+                  <div className="p-5 sm:p-8 space-y-6 sm:space-y-8">
+                    <div className="flex justify-between items-end gap-4">
+                      <div className="space-y-1 min-w-0">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Settlement Amount</p>
-                        <p className="text-5xl font-black text-ink-primary tracking-tight">₱{selectedTx.amount.toFixed(2)}</p>
+                        <p className="text-3xl sm:text-5xl font-black text-ink-primary tracking-tight truncate">₱{selectedTx.amount.toFixed(2)}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Reference ID</p>
-                        <p className="text-sm font-mono font-bold text-brand">#{selectedTx.id.toUpperCase()}</p>
+                        <p className="text-xs sm:text-sm font-mono font-bold text-brand">#{selectedTx.id.toUpperCase()}</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 py-8 border-y border-border-theme">
+                    <div className="grid grid-cols-2 gap-4 sm:gap-8 py-6 sm:py-8 border-y border-border-theme">
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payer</p>
                         <div className="flex items-center gap-3">
@@ -1582,7 +1581,7 @@ export default function AbonoShareApp() {
 
       {/* Floating Action for Mobile */}
       {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active') && (
-        <div className="md:hidden fixed bottom-24 right-6 z-50">
+        <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-50">
           <button 
             onClick={createNewBill}
             className="w-14 h-14 bg-brand text-white rounded-full shadow-[0_20px_50px_rgba(37,99,235,0.4)] flex items-center justify-center hover:scale-110 transition-all active:scale-95 backdrop-blur-xl bg-opacity-95 border border-white/30"
@@ -1606,14 +1605,18 @@ export default function AbonoShareApp() {
             />
             
             {/* Modal Content */}
-            <motion.div 
+            <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="relative w-full max-w-lg glass rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6 sm:p-8">
+              {/* Drag handle indicator */}
+              <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-10 h-1 bg-border-theme rounded-full" />
+              </div>
+              <div className="p-5 sm:p-8 overflow-y-auto max-h-[85dvh] scroll-container">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-2xl font-black text-ink-primary">New Bill</h2>
@@ -1709,10 +1712,10 @@ export default function AbonoShareApp() {
                     />
                   </div>
 
-                  <div className="pt-6">
-                    <button 
+                  <div className="pt-4 pb-2">
+                    <button
                       type="submit"
-                      className="w-full py-5 bg-brand text-white rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-brand/20 active:scale-[0.98]"
+                      className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-xl shadow-brand/20 active:scale-[0.98]"
                     >
                       Create Request
                     </button>
