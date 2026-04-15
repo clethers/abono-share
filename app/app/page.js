@@ -1003,7 +1003,7 @@ export default function AbonoShareApp() {
                     </div>
                     <div className="p-4 grid grid-cols-3 gap-3">
                       {['Primary', 'Secondary', 'Tertiary'].map((label, i) => (
-                        <div key={label} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-bg-main border border-border-theme group cursor-pointer hover:bg-surface hover:border-brand transition-all">
+                        <div key={label} className="slot-item flex flex-col items-center justify-center gap-2 p-3 rounded-xl border group cursor-pointer hover:border-brand transition-all">
                           <QrCode size={20} className={i === 0 ? "text-brand" : "text-ink-secondary group-hover:text-brand transition-colors"} />
                           <span className="text-[9px] font-bold uppercase tracking-tighter text-ink-secondary group-hover:text-ink-primary">{label}</span>
                         </div>

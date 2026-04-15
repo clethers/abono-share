@@ -69,6 +69,16 @@ html, body {
   overflow: hidden;
 }
 
+/* Slot item: light = off-white, dark = subtle white tint above surface */
+.slot-item {
+  background: #F8FAFC;
+  border-color: var(--color-border-theme);
+}
+.dark .slot-item {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
