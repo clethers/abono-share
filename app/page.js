@@ -335,6 +335,8 @@ export default function AbonoShareApp() {
   const [newMemberId, setNewMemberId] = useState('');
   const [viewingProfile, setViewingProfile] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState(1);
+  const [registrationData, setRegistrationData] = useState({ displayName: '', mobile: '', email: '' });
   const [registrationQrUrl, setRegistrationQrUrl] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -382,7 +384,8 @@ export default function AbonoShareApp() {
     const newUser = {
       uid: `user_${Date.now()}`,
       displayName: userData.displayName,
-      email: userData.email,
+      email: userData.email || '',
+      mobile: userData.mobile ? `+63${userData.mobile}` : '',
       photoURL: `https://picsum.photos/seed/${userData.displayName}/200/200`,
       qrCodes: {
         primary: userData.qrCodeUrl,
@@ -393,6 +396,9 @@ export default function AbonoShareApp() {
     setUser(newUser);
     setAllUsers(prev => ({ ...prev, [newUser.uid]: newUser }));
     setIsRegistering(false);
+    setRegistrationStep(1);
+    setRegistrationData({ displayName: '', mobile: '', email: '' });
+    setRegistrationQrUrl('');
   };
 
   const handleLogout = () => {
@@ -518,74 +524,184 @@ export default function AbonoShareApp() {
   if (!user) {
     if (isRegistering) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-start pt-12 sm:justify-center sm:pt-0 bg-bg-main p-6 overflow-y-auto">
-          <motion.div 
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-bg-main px-5 py-10 overflow-y-auto">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md space-y-8 bg-surface p-8 rounded-3xl shadow-xl border border-border-theme"
+            className="w-full max-w-md"
           >
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-black text-ink-primary">Create Account</h2>
-              <p className="text-sm text-ink-secondary">Join the high-trust settlement network</p>
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-8">
+              <button
+                onClick={() => {
+                  if (registrationStep === 2) {
+                    setRegistrationStep(1);
+                  } else {
+                    setIsRegistering(false);
+                    setRegistrationStep(1);
+                    setRegistrationData({ displayName: '', mobile: '', email: '' });
+                    setRegistrationQrUrl('');
+                  }
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-surface border border-border-theme text-ink-secondary hover:text-ink-primary transition-colors"
+              >
+                <ArrowRight className="rotate-180" size={18} />
+              </button>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                    Step {registrationStep} of 2
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                    {registrationStep === 1 ? 'Identity' : 'Payment Setup'}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-border-theme rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-brand rounded-full"
+                    initial={{ width: registrationStep === 1 ? '0%' : '50%' }}
+                    animate={{ width: registrationStep === 1 ? '50%' : '100%' }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              const data = {
-                displayName: formData.get('displayName'),
-                email: formData.get('email'),
-                qrCodeUrl: registrationQrUrl
-              };
-              if (!data.qrCodeUrl) {
-                alert('Please upload your payment QR code');
-                return;
-              }
-              handleRegister(data);
-            }} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Full Name</label>
-                <input 
-                  name="displayName"
-                  type="text" 
-                  required
-                  placeholder="Alex Thompson"
-                  className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Email Address</label>
-                <input 
-                  name="email"
-                  type="email" 
-                  required
-                  placeholder="alex@example.com"
-                  className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payment QR Code</label>
-                <RegistrationQrUpload onUpload={(url) => setRegistrationQrUrl(url)} />
-              </div>
-
-              <div className="flex flex-col gap-3 pt-4">
-                <button 
-                  type="submit"
-                  className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98]"
+            <AnimatePresence mode="wait">
+              {registrationStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.25 }}
                 >
-                  Complete Registration
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setIsRegistering(false)}
-                  className="w-full py-3 text-sm font-bold text-ink-secondary hover:bg-bg-main rounded-xl transition-colors"
+                  <div className="bg-surface rounded-3xl border border-border-theme shadow-xl p-6 sm:p-8 space-y-6">
+                    <div className="space-y-1">
+                      <h2 className="text-2xl font-black text-ink-primary">Who are you?</h2>
+                      <p className="text-sm text-ink-secondary">This is how others will find and pay you.</p>
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const fd = new FormData(e.target);
+                        setRegistrationData({
+                          displayName: fd.get('displayName'),
+                          mobile: fd.get('mobile'),
+                          email: fd.get('email'),
+                        });
+                        setRegistrationStep(2);
+                      }}
+                      className="space-y-4"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Full Name</label>
+                        <input
+                          name="displayName"
+                          type="text"
+                          required
+                          defaultValue={registrationData.displayName}
+                          placeholder="e.g. Alex Thompson"
+                          className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                          Mobile Number <span className="text-brand">*</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-secondary">+63</span>
+                          <input
+                            name="mobile"
+                            type="tel"
+                            required
+                            defaultValue={registrationData.mobile}
+                            placeholder="9XX XXX XXXX"
+                            maxLength={10}
+                            className="w-full pl-12 pr-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                          />
+                        </div>
+                        <p className="text-[10px] text-ink-secondary">Used to find you on GCash, Maya, and for bill requests.</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                          Email <span className="text-ink-secondary font-medium normal-case tracking-normal">(optional)</span>
+                        </label>
+                        <input
+                          name="email"
+                          type="email"
+                          defaultValue={registrationData.email}
+                          placeholder="alex@example.com"
+                          className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
+                          Continue
+                          <ArrowRight size={18} />
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </motion.div>
+              )}
+
+              {registrationStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.25 }}
                 >
-                  Back to Login
-                </button>
-              </div>
-            </form>
+                  <div className="bg-surface rounded-3xl border border-border-theme shadow-xl p-6 sm:p-8 space-y-6">
+                    <div className="space-y-1">
+                      <h2 className="text-2xl font-black text-ink-primary">Set up payment</h2>
+                      <p className="text-sm text-ink-secondary">Upload your GCash, Maya, or bank QR so others can pay you directly.</p>
+                    </div>
+
+                    <div className="p-4 bg-brand/5 border border-brand/20 rounded-2xl flex gap-3 items-start">
+                      <ShieldCheck size={16} className="text-brand shrink-0 mt-0.5" />
+                      <p className="text-xs text-brand font-medium leading-relaxed">
+                        Your QR code is stored locally on your device. It is never uploaded to any external server.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                        Primary Payment QR <span className="text-brand">*</span>
+                      </label>
+                      <RegistrationQrUpload onUpload={(url) => setRegistrationQrUrl(url)} />
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <button
+                        type="button"
+                        disabled={!registrationQrUrl}
+                        onClick={() => {
+                          if (!registrationQrUrl) return;
+                          handleRegister({ ...registrationData, qrCodeUrl: registrationQrUrl });
+                        }}
+                        className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 size={18} />
+                        Complete Registration
+                      </button>
+                      <p className="text-center text-[10px] text-ink-secondary">
+                        You can update or add more QR codes later in Settings.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       );
@@ -1110,13 +1226,21 @@ export default function AbonoShareApp() {
                         </div>
 
                         <div className="space-y-4 pt-4 border-t border-border-theme">
+                          {viewingProfile.mobile && (
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile</p>
+                              <p className="text-sm font-bold text-ink-primary">{viewingProfile.mobile}</p>
+                            </div>
+                          )}
+                          {viewingProfile.email && (
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Email</p>
+                              <p className="text-sm font-medium text-ink-primary">{viewingProfile.email}</p>
+                            </div>
+                          )}
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">User ID</p>
                             <p className="text-sm font-mono font-bold text-brand">{viewingProfile.uid}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Email</p>
-                            <p className="text-sm font-medium">{viewingProfile.email || 'N/A'}</p>
                           </div>
                         </div>
 
