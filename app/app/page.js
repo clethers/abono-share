@@ -27,83 +27,26 @@ import {
   Moon
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-
-// --- Mock Data & Local Storage Helpers ---
-
-const MOCK_USER = {
-  uid: 'user_123',
-  displayName: 'Juan dela Cruz',
-  email: 'juan@example.com',
-  photoURL: 'https://picsum.photos/seed/juan/200/200',
-  qrCodes: {
-    primary: 'https://picsum.photos/seed/qr1/400/400',
-    secondary: '',
-    tertiary: ''
-  }
-};
-
-const MOCK_USERS = {
-  'user_123': MOCK_USER,
-  'recipient_456': {
-    uid: 'recipient_456',
-    displayName: 'Maria Santos',
-    email: 'maria@example.com',
-    photoURL: 'https://picsum.photos/seed/maria/200/200',
-    qrCodes: { primary: 'https://picsum.photos/seed/qr2/400/400' }
-  },
-  'sender_789': {
-    uid: 'sender_789',
-    displayName: 'Jose Reyes',
-    email: 'jose@example.com',
-    photoURL: 'https://picsum.photos/seed/jose/200/200',
-    qrCodes: { primary: 'https://picsum.photos/seed/qr3/400/400' }
-  }
-};
-
-const INITIAL_TRANSACTIONS = [
-  {
-    id: 'tx_1',
-    payerId: 'user_123',
-    recipientId: 'recipient_456',
-    groupId: 'group_1',
-    amount: 1250.00,
-    status: 'unpaid',
-    category: 'food',
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 86400 },
-  },
-  {
-    id: 'tx_2',
-    payerId: 'sender_789',
-    recipientId: 'user_123',
-    groupId: 'group_1',
-    amount: 450.00,
-    status: 'pending',
-    category: 'transport',
-    receiptUrl: 'https://picsum.photos/seed/receipt/800/600',
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 172800 },
-    paidAt: { seconds: Math.floor(Date.now() / 1000) - 170000 },
-  },
-  {
-    id: 'tx_3',
-    payerId: 'user_123',
-    recipientId: 'recipient_456',
-    groupId: 'group_1',
-    amount: 1500.00,
-    status: 'settled',
-    category: 'utilities',
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 259200 },
-  },
-  {
-    id: 'tx_4',
-    payerId: 'sender_789',
-    recipientId: 'user_123',
-    groupId: 'group_1',
-    amount: 800.00,
-    status: 'unpaid',
-    category: 'entertainment',
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 345600 },
-  }
-];
+import { createClient } from '../../lib/supabase/client';
+import {
+  getProfile,
+  updateProfile,
+  getQrCodes,
+  uploadQrCode,
+  getQrSignedUrl,
+  getTransactions,
+  createTransaction,
+  markTransactionPending,
+  settleTransaction,
+  uploadReceipt,
+  getReceiptSignedUrl,
+  getGroups,
+  createGroup,
+  addGroupMember,
+  removeGroupMember,
+  findProfileByMobile,
+  computeBalances,
+} from '../../lib/supabase/db';
 
 // --- Components ---
 
@@ -149,14 +92,7 @@ const RegistrationQrUpload = ({ onUpload }) => {
     const selectedFile = acceptedFiles[0];
     setFile(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
-    
-    // Trigger upload immediately
-    setUploading(true);
-    setTimeout(() => {
-      const mockUrl = `https://picsum.photos/seed/qr_${Date.now()}/400/400`;
-      onUpload(mockUrl);
-      setUploading(false);
-    }, 1000);
+    onUpload(selectedFile); // pass raw File object
   }, [onUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
@@ -209,15 +145,9 @@ const ReceiptUpload = ({ onUpload, onCancel }) => {
     multiple: false 
   });
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!file) return;
-    setUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
-      const mockUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
-      onUpload(mockUrl);
-      setUploading(false);
-    }, 1500);
+    onUpload(file); // pass raw File object
   };
 
   return (
@@ -272,52 +202,23 @@ const ReceiptUpload = ({ onUpload, onCancel }) => {
   );
 };
 
-const MOCK_GROUPS = [
-  {
-    id: 'group_1',
-    name: 'BGC Foodies',
-    members: ['user_123', 'recipient_456', 'sender_789'],
-    totalSpent: 4500.00,
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 604800 }
-  },
-  {
-    id: 'group_2',
-    name: 'Weekend Trip',
-    members: ['user_123', 'recipient_456'],
-    totalSpent: 12000.00,
-    createdAt: { seconds: Math.floor(Date.now() / 1000) - 259200 }
-  }
-];
-
 // --- Main App ---
 
 export default function AbonoShareApp() {
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('abonoshare_user');
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
-  const [transactions, setTransactions] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('abonoshare_txs');
-      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
-    }
-    return INITIAL_TRANSACTIONS;
-  });
-  const [allUsers, setAllUsers] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('abonoshare_all_users');
-      return saved ? JSON.parse(saved) : MOCK_USERS;
-    }
-    return MOCK_USERS;
-  });
-  const [groups, setGroups] = useState(MOCK_GROUPS);
-  const [loading, setLoading] = useState(false);
-  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups
+  const [supabase] = useState(() => createClient());
+  const [user, setUser] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [allUsers, setAllUsers] = useState({});
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail
   const [selectedTx, setSelectedTx] = useState(null);
+  const [receiptSignedUrl, setReceiptSignedUrl] = useState(null);
+  const [balanceCounterparty, setBalanceCounterparty] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [settleStep, setSettleStep] = useState('qr'); // qr, upload
 
@@ -336,7 +237,7 @@ export default function AbonoShareApp() {
   const [viewingProfile, setViewingProfile] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
-  const [registrationData, setRegistrationData] = useState({ displayName: '', mobile: '', email: '' });
+  const [registrationData, setRegistrationData] = useState({ displayName: '', mobile: '', email: '', password: '' });
   const [registrationQrUrl, setRegistrationQrUrl] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -356,54 +257,147 @@ export default function AbonoShareApp() {
     localStorage.setItem('abonoshare_dark_mode', darkMode);
   }, [darkMode]);
 
-  // Load data from localStorage on mount
+  // Load session + data on mount; keep in sync with auth state changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
+    let active = true;
 
-  // Save data to localStorage
-  useEffect(() => {
-    if (mounted) {
-      if (user) {
-        localStorage.setItem('abonoshare_user', JSON.stringify(user));
-      } else {
-        localStorage.removeItem('abonoshare_user');
-      }
-      localStorage.setItem('abonoshare_txs', JSON.stringify(transactions));
-      localStorage.setItem('abonoshare_all_users', JSON.stringify(allUsers));
-    }
-  }, [user, transactions, allUsers, mounted]);
+    const loadData = async (userId) => {
+      try {
+        const [profile, txs, grps, qrCodes] = await Promise.all([
+          getProfile(supabase, userId),
+          getTransactions(supabase, userId),
+          getGroups(supabase),
+          getQrCodes(supabase, userId),
+        ]);
 
-  const handleLogin = () => {
-    setUser(MOCK_USER);
-    setAllUsers(prev => ({ ...prev, [MOCK_USER.uid]: MOCK_USER }));
-  };
+        const qrMap = {};
+        await Promise.all(
+          qrCodes.map(async (qr) => {
+            qrMap[qr.slot] = await getQrSignedUrl(supabase, qr.storage_path);
+          })
+        );
 
-  const handleRegister = (userData) => {
-    const newUser = {
-      uid: `user_${Date.now()}`,
-      displayName: userData.displayName,
-      email: userData.email || '',
-      mobile: userData.mobile ? `+63${userData.mobile}` : '',
-      photoURL: `https://picsum.photos/seed/${userData.displayName}/200/200`,
-      qrCodes: {
-        primary: userData.qrCodeUrl,
-        secondary: '',
-        tertiary: ''
+        if (!active) return;
+
+        setUser({
+          ...profile,
+          qrCodes: {
+            primary: qrMap.primary || '',
+            secondary: qrMap.secondary || '',
+            tertiary: qrMap.tertiary || '',
+          },
+        });
+        setTransactions(txs);
+        setGroups(grps);
+
+        // Build allUsers map from joined transaction participant data
+        const usersMap = { [userId]: profile };
+        txs.forEach((tx) => {
+          if (tx.payer) usersMap[tx.payer.id] = tx.payer;
+          if (tx.recipient) usersMap[tx.recipient.id] = tx.recipient;
+        });
+        setAllUsers(usersMap);
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        if (active) setLoading(false);
       }
     };
-    setUser(newUser);
-    setAllUsers(prev => ({ ...prev, [newUser.uid]: newUser }));
-    setIsRegistering(false);
-    setRegistrationStep(1);
-    setRegistrationData({ displayName: '', mobile: '', email: '' });
-    setRegistrationQrUrl('');
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadData(session.user.id);
+      } else {
+        if (active) setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadData(session.user.id);
+      } else {
+        setUser(null);
+        setTransactions([]);
+        setGroups([]);
+        setAllUsers({});
+      }
+    });
+
+    setMounted(true);
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    setReceiptSignedUrl(null);
+    const receipt = selectedTx?.receipts?.[0];
+    if (!receipt?.storage_path) return;
+    let cancelled = false;
+    getReceiptSignedUrl(supabase, receipt.storage_path)
+      .then(url => { if (!cancelled) setReceiptSignedUrl(url); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedTx, supabase]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError('');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+    if (error) {
+      setAuthError(error.message);
+      setLoading(false);
+    }
+    // onAuthStateChange handles setting user on success
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('abonoshare_user');
+  const handleRegister = async (userData) => {
+    setLoading(true);
+    setAuthError('');
+    const mobile = `+63${userData.mobile}`;
+
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: { display_name: userData.displayName, mobile },
+      },
+    });
+
+    if (signUpError) {
+      setAuthError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    const userId = authData.user.id;
+
+    await updateProfile(supabase, userId, {
+      display_name: userData.displayName,
+      mobile,
+      email: userData.email,
+    });
+
+    if (userData.qrCodeFile) {
+      await uploadQrCode(supabase, userId, 'primary', userData.qrCodeFile);
+    }
+
+    setIsRegistering(false);
+    setRegistrationStep(1);
+    setRegistrationData({ displayName: '', mobile: '', email: '', password: '' });
+    setRegistrationQrUrl('');
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // onAuthStateChange clears user state
   };
 
   const handleSettleUp = (tx) => {
@@ -412,45 +406,64 @@ export default function AbonoShareApp() {
     setActiveView('settle-up');
   };
 
-  const handleUploadReceipt = (url) => {
-    const updatedTxs = transactions.map(t => 
-      t.id === selectedTx.id 
-        ? { ...t, status: 'pending', receiptUrl: url, paidAt: { seconds: Math.floor(Date.now() / 1000) } }
-        : t
-    );
-    setTransactions(updatedTxs);
+  const handleUploadReceipt = async (file) => {
+    if (!selectedTx) return;
+    setLoading(true);
+    try {
+      await uploadReceipt(supabase, selectedTx.id, file);
+      await markTransactionPending(supabase, selectedTx.id);
+      const refreshed = await getTransactions(supabase, user.id);
+      setTransactions(refreshed);
+    } catch (err) {
+      console.error('Failed to upload receipt:', err);
+    } finally {
+      setLoading(false);
+    }
     setActiveView('dashboard');
     setSelectedTx(null);
   };
 
-  const handleVerifyPayment = (txId) => {
-    const updatedTxs = transactions.map(t => 
-      t.id === txId 
-        ? { ...t, status: 'settled', verifiedAt: { seconds: Math.floor(Date.now() / 1000) } }
-        : t
-    );
-    setTransactions(updatedTxs);
+  const handleVerifyPayment = async (txId) => {
+    setLoading(true);
+    try {
+      await settleTransaction(supabase, txId);
+      const refreshed = await getTransactions(supabase, user.id);
+      setTransactions(refreshed);
+    } catch (err) {
+      console.error('Failed to verify payment:', err);
+    } finally {
+      setLoading(false);
+    }
     setActiveView('dashboard');
     setSelectedTx(null);
   };
 
-  const handleCreateBill = (e) => {
+  const handleCreateBill = async (e) => {
     e.preventDefault();
     if (!newBillAmount || !newBillRecipient) return;
-
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      payerId: user.uid,
-      recipientId: newBillRecipient,
-      groupId: newBillGroupId || null,
-      description: newBillDescription || 'Split Bill',
-      amount: parseFloat(newBillAmount),
-      status: 'unpaid',
-      category: newBillCategory,
-      createdAt: { seconds: Math.floor(Date.now() / 1000) }
-    };
-    
-    setTransactions([newTx, ...transactions]);
+    setLoading(true);
+    try {
+      const recipientProfile = await findProfileByMobile(supabase, newBillRecipient);
+      if (!recipientProfile) {
+        console.error('No user found with that mobile number');
+        setLoading(false);
+        return;
+      }
+      await createTransaction(supabase, {
+        payer_id: user.id,
+        recipient_id: recipientProfile.id,
+        group_id: newBillGroupId || null,
+        description: newBillDescription || 'Split Bill',
+        amount: parseFloat(newBillAmount),
+        category: newBillCategory,
+      });
+      const refreshed = await getTransactions(supabase, user.id);
+      setTransactions(refreshed);
+    } catch (err) {
+      console.error('Failed to create bill:', err);
+    } finally {
+      setLoading(false);
+    }
     setNewBillAmount('');
     setNewBillRecipient('');
     setNewBillDescription('');
@@ -463,46 +476,60 @@ export default function AbonoShareApp() {
     setActiveView('add-bill');
   };
 
-  const handleCreateGroup = (e) => {
+  const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroupName) return;
-    const newGroup = {
-      id: `group_${Date.now()}`,
-      name: newGroupName,
-      members: [user.uid],
-      totalSpent: 0,
-      createdAt: { seconds: Math.floor(Date.now() / 1000) }
-    };
-    setGroups([newGroup, ...groups]);
+    setLoading(true);
+    try {
+      await createGroup(supabase, newGroupName, user.id);
+      const refreshed = await getGroups(supabase);
+      setGroups(refreshed);
+    } catch (err) {
+      console.error('Failed to create group:', err);
+    } finally {
+      setLoading(false);
+    }
     setNewGroupName('');
     setIsAddingGroup(false);
   };
 
-  const handleAddMember = (e) => {
+  const handleAddMember = async (e) => {
     e.preventDefault();
     if (!newMemberId || !selectedGroup) return;
-    
-    const updatedGroups = groups.map(g => 
-      g.id === selectedGroup.id 
-        ? { ...g, members: [...new Set([...g.members, newMemberId])] }
-        : g
-    );
-    
-    setGroups(updatedGroups);
-    setSelectedGroup({ ...selectedGroup, members: [...new Set([...selectedGroup.members, newMemberId])] });
+    setLoading(true);
+    try {
+      const profile = await findProfileByMobile(supabase, newMemberId);
+      if (!profile) {
+        setAuthError('No user found with that mobile number.');
+        setLoading(false);
+        return;
+      }
+      await addGroupMember(supabase, selectedGroup.id, profile.id);
+      const refreshed = await getGroups(supabase);
+      setGroups(refreshed);
+      setSelectedGroup(refreshed.find((g) => g.id === selectedGroup.id));
+    } catch (err) {
+      console.error('Failed to add member:', err);
+    } finally {
+      setLoading(false);
+    }
     setNewMemberId('');
     setIsAddingMember(false);
   };
 
-  const handleRemoveMember = (memberId) => {
+  const handleRemoveMember = async (memberId) => {
     if (!selectedGroup) return;
-    const updatedGroups = groups.map(g => 
-      g.id === selectedGroup.id 
-        ? { ...g, members: g.members.filter(m => m !== memberId) }
-        : g
-    );
-    setGroups(updatedGroups);
-    setSelectedGroup({ ...selectedGroup, members: selectedGroup.members.filter(m => m !== memberId) });
+    setLoading(true);
+    try {
+      await removeGroupMember(supabase, selectedGroup.id, memberId);
+      const refreshed = await getGroups(supabase);
+      setGroups(refreshed);
+      setSelectedGroup(refreshed.find((g) => g.id === selectedGroup.id));
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -539,7 +566,7 @@ export default function AbonoShareApp() {
                   } else {
                     setIsRegistering(false);
                     setRegistrationStep(1);
-                    setRegistrationData({ displayName: '', mobile: '', email: '' });
+                    setRegistrationData({ displayName: '', mobile: '', email: '', password: '' });
                     setRegistrationQrUrl('');
                   }
                 }}
@@ -590,6 +617,7 @@ export default function AbonoShareApp() {
                           displayName: fd.get('displayName'),
                           mobile: fd.get('mobile'),
                           email: fd.get('email'),
+                          password: fd.get('password'),
                         });
                         setRegistrationStep(2);
                       }}
@@ -628,13 +656,29 @@ export default function AbonoShareApp() {
 
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
-                          Email <span className="text-ink-secondary font-medium normal-case tracking-normal">(optional)</span>
+                          Email <span className="text-brand">*</span>
                         </label>
                         <input
                           name="email"
                           type="email"
+                          required
                           defaultValue={registrationData.email}
                           placeholder="juan@example.com"
+                          className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                          Password <span className="text-brand">*</span>
+                        </label>
+                        <input
+                          name="password"
+                          type="password"
+                          required
+                          minLength={8}
+                          defaultValue={registrationData.password}
+                          placeholder="Min. 8 characters"
                           className="w-full px-4 py-3 bg-bg-main border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
                         />
                       </div>
@@ -670,7 +714,7 @@ export default function AbonoShareApp() {
                     <div className="p-4 bg-brand/5 border border-brand/20 rounded-2xl flex gap-3 items-start">
                       <ShieldCheck size={16} className="text-brand shrink-0 mt-0.5" />
                       <p className="text-xs text-brand font-medium leading-relaxed">
-                        Your QR code is stored locally on your device. It is never uploaded to any external server.
+                        Your QR code is stored securely in private storage and only shared with people you transact with.
                       </p>
                     </div>
 
@@ -678,21 +722,25 @@ export default function AbonoShareApp() {
                       <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
                         Primary Payment QR <span className="text-brand">*</span>
                       </label>
-                      <RegistrationQrUpload onUpload={(url) => setRegistrationQrUrl(url)} />
+                      <RegistrationQrUpload onUpload={(file) => setRegistrationQrUrl(file)} />
                     </div>
+
+                    {authError && (
+                      <p className="text-xs text-red-500 text-center">{authError}</p>
+                    )}
 
                     <div className="space-y-3 pt-2">
                       <button
                         type="button"
-                        disabled={!registrationQrUrl}
+                        disabled={!registrationQrUrl || loading}
                         onClick={() => {
                           if (!registrationQrUrl) return;
-                          handleRegister({ ...registrationData, qrCodeUrl: registrationQrUrl });
+                          handleRegister({ ...registrationData, qrCodeFile: registrationQrUrl });
                         }}
                         className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         <CheckCircle2 size={18} />
-                        Complete Registration
+                        {loading ? 'Setting up...' : 'Complete Registration'}
                       </button>
                       <p className="text-center text-[10px] text-ink-secondary">
                         You can update or add more QR codes later in Settings.
@@ -719,14 +767,36 @@ export default function AbonoShareApp() {
           </div>
           
           <div className="space-y-4">
-            <button 
-              onClick={handleLogin}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface border border-border-theme rounded-2xl shadow-sm hover:bg-bg-main transition-all font-bold text-ink-primary"
-            >
-              <User size={20} className="text-brand" />
-              Sign in to Demo
-            </button>
-            
+            {authError && (
+              <p className="text-xs text-red-500 text-center">{authError}</p>
+            )}
+            <form onSubmit={handleLogin} className="space-y-3">
+              <input
+                type="email"
+                required
+                placeholder="Email address"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-surface border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+              />
+              <input
+                type="password"
+                required
+                placeholder="Password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-surface border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface border border-border-theme rounded-2xl shadow-sm hover:bg-bg-main transition-all font-bold text-ink-primary disabled:opacity-50"
+              >
+                <User size={20} className="text-brand" />
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border-theme"></div>
@@ -736,7 +806,7 @@ export default function AbonoShareApp() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setIsRegistering(true)}
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 hover:scale-[1.02] transition-all font-bold"
             >
@@ -744,8 +814,6 @@ export default function AbonoShareApp() {
               Create New Account
             </button>
           </div>
-          
-          <p className="text-[10px] text-ink-secondary font-bold uppercase tracking-widest">Note: This is a local demo. Data is saved to your browser.</p>
         </div>
       </div>
     );
@@ -774,7 +842,7 @@ export default function AbonoShareApp() {
             </motion.div>
           </button>
           <div className="flex items-center gap-1.5">
-            <span className="max-w-[100px] sm:max-w-none truncate text-ink-primary font-bold">{user.displayName.split(' ')[0]}</span>
+            <span className="max-w-[100px] sm:max-w-none truncate text-ink-primary font-bold">{user.display_name?.split(' ')[0]}</span>
             <button
               onClick={handleLogout}
               className="w-9 h-9 flex items-center justify-center text-ink-secondary hover:text-ink-primary transition-colors"
@@ -803,7 +871,7 @@ export default function AbonoShareApp() {
                 </div>
                 <div className="text-right">
                   <div className="text-[9px] sm:text-[10px] uppercase tracking-[1.5px] opacity-70 font-bold mb-0.5">Recipient</div>
-                  <div className="text-base sm:text-lg truncate max-w-[120px]">{selectedTx.recipientId === user.uid ? 'You' : selectedTx.recipientId.slice(0, 8) + '...'}</div>
+                  <div className="text-base sm:text-lg truncate max-w-[120px]">{selectedTx.recipient_id === user.id ? 'You' : selectedTx.recipient?.display_name || selectedTx.recipient_id?.slice(0, 8)}</div>
                 </div>
               </>
             )}
@@ -836,9 +904,16 @@ export default function AbonoShareApp() {
             <Clock size={18} />
             Active
           </button>
-          <button 
+          <button
+            onClick={() => setActiveView('balances')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'balances' || activeView === 'balance-detail' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
+          >
+            <ArrowRight size={18} />
+            Balances
+          </button>
+          <button
             onClick={() => setActiveView('groups')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'groups' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'groups' || activeView === 'group-detail' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
           >
             <UsersRound size={18} />
             Groups
@@ -868,8 +943,15 @@ export default function AbonoShareApp() {
             <span className="text-[10px] font-bold uppercase tracking-wide">Active</span>
           </button>
           <button
+            onClick={() => setActiveView('balances')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'balances' || activeView === 'balance-detail' ? 'text-brand' : 'text-ink-secondary'}`}
+          >
+            <ArrowRight size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Balances</span>
+          </button>
+          <button
             onClick={() => setActiveView('groups')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'groups' ? 'text-brand' : 'text-ink-secondary'}`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'groups' || activeView === 'group-detail' ? 'text-brand' : 'text-ink-secondary'}`}
           >
             <UsersRound size={22} />
             <span className="text-[10px] font-bold uppercase tracking-wide">Groups</span>
@@ -921,7 +1003,7 @@ export default function AbonoShareApp() {
                       <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">To Receive</p>
                     </div>
                     <p className="text-3xl font-black text-ink-primary">
-                      ₱{transactions.filter(tx => tx.status !== 'settled' && tx.recipientId === user.uid).reduce((acc, tx) => acc + tx.amount, 0).toFixed(2)}
+                      ₱{transactions.filter(tx => tx.status !== 'settled' && tx.recipient_id === user.id).reduce((acc, tx) => acc + tx.amount, 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -944,18 +1026,18 @@ export default function AbonoShareApp() {
                           className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.recipientId === user.uid ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                              {tx.recipientId === user.uid ? <Plus size={18} /> : <ArrowRight size={18} className="rotate-180" />}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.recipient_id === user.id ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                              {tx.recipient_id === user.id ? <Plus size={18} /> : <ArrowRight size={18} className="rotate-180" />}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="text-sm font-bold text-ink-primary">
-                                  {tx.recipientId === user.uid ? `From ${allUsers[tx.payerId]?.displayName || tx.payerId.slice(0, 8)}` : `To ${allUsers[tx.recipientId]?.displayName || tx.recipientId.slice(0, 8)}`}
+                                  {tx.recipient_id === user.id ? `From ${tx.payer?.display_name || tx.payer_id?.slice(0, 8)}` : `To ${tx.recipient?.display_name || tx.recipient_id?.slice(0, 8)}`}
                                 </p>
                                 {tx.category && <CategoryTag category={tx.category} />}
                               </div>
                               <p className="text-[10px] text-ink-secondary font-medium">
-                                {new Date(tx.createdAt.seconds * 1000).toLocaleDateString()}
+                                {new Date(tx.created_at).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -989,7 +1071,7 @@ export default function AbonoShareApp() {
                       <p className="text-3xl font-black text-ink-primary">
                         ₱{transactions.reduce((acc, tx) => {
                           if (tx.status === 'settled') return acc;
-                          return tx.recipientId === user.uid ? acc + tx.amount : acc - tx.amount;
+                          return tx.recipient_id === user.id ? acc + tx.amount : acc - tx.amount;
                         }, 0).toFixed(2)}
                       </p>
                     </div>
@@ -1031,20 +1113,20 @@ export default function AbonoShareApp() {
                           className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.payerId === user.uid ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                              {tx.payerId === user.uid ? <ArrowRight className="rotate-45" size={18} /> : <ArrowRight className="-rotate-135" size={18} />}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.payer_id === user.id ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                              {tx.payer_id === user.id ? <ArrowRight className="rotate-45" size={18} /> : <ArrowRight className="-rotate-135" size={18} />}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="font-bold text-sm text-ink-primary">
-                                  {tx.payerId === user.uid ? `To ${allUsers[tx.recipientId]?.displayName || tx.recipientId.slice(0, 8)}` : `From ${allUsers[tx.payerId]?.displayName || tx.payerId.slice(0, 8)}`}
+                                  {tx.payer_id === user.id ? `To ${tx.recipient?.display_name || tx.recipient_id?.slice(0, 8)}` : `From ${tx.payer?.display_name || tx.payer_id?.slice(0, 8)}`}
                                 </p>
                                 {tx.category && <CategoryTag category={tx.category} />}
                               </div>
                               <div className="flex items-center gap-2">
                                 <StatusBadge status={tx.status} />
                                 <span className="text-[10px] text-ink-secondary font-medium">
-                                  {tx.groupId ? `• ${groups.find(g => g.id === tx.groupId)?.name}` : ''}
+                                  {tx.group_id ? `• ${groups.find(g => g.id === tx.group_id)?.name}` : ''}
                                 </span>
                               </div>
                             </div>
@@ -1052,7 +1134,7 @@ export default function AbonoShareApp() {
                           <div className="text-right">
                             <p className="font-black text-ink-primary">₱{tx.amount.toFixed(2)}</p>
                             <p className="text-[10px] text-ink-secondary uppercase font-bold tracking-widest">
-                              {new Date(tx.createdAt?.seconds * 1000).toLocaleDateString()}
+                              {new Date(tx.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -1097,32 +1179,32 @@ export default function AbonoShareApp() {
                     </button>
                   </div>
                   <div className="p-4 space-y-3">
-                    {selectedGroup.members.map(memberId => {
-                      const memberData = allUsers[memberId] || { uid: memberId, displayName: memberId };
+                    {selectedGroup.group_members.map(gm => {
+                      const profile = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
                       return (
-                        <div 
-                          key={memberId} 
+                        <div
+                          key={gm.user_id}
                           className="flex items-center justify-between p-3 bg-[#F8FAFC]/50 rounded-xl border border-border-theme group/member hover:border-brand transition-all cursor-pointer"
-                          onClick={() => setViewingProfile(memberData)}
+                          onClick={() => setViewingProfile(profile)}
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-bold overflow-hidden">
-                              {memberData.photoURL ? (
-                                <Image src={memberData.photoURL} alt="" width={32} height={32} className="object-cover" />
+                              {profile.photo_url ? (
+                                <Image src={profile.photo_url} alt="" width={32} height={32} className="object-cover" />
                               ) : (
-                                memberId.slice(0, 2).toUpperCase()
+                                (profile.display_name || gm.user_id).slice(0, 2).toUpperCase()
                               )}
                             </div>
                             <div>
                               <p className="text-sm font-bold text-ink-primary truncate max-w-[120px]">
-                                {memberId === user.uid ? 'You' : memberData.displayName}
+                                {gm.user_id === user.id ? 'You' : profile.display_name}
                               </p>
                               <p className="text-[10px] text-ink-secondary font-medium">View Profile</p>
                             </div>
                           </div>
-                          {memberId !== user.uid && (
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleRemoveMember(memberId); }}
+                          {gm.user_id !== user.id && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveMember(gm.user_id); }}
                               className="opacity-0 group-hover/member:opacity-100 p-1 text-ink-secondary hover:text-red-500 transition-all"
                             >
                               <X size={14} />
@@ -1138,7 +1220,7 @@ export default function AbonoShareApp() {
                 <section className="card-theme lg:col-span-2 glass order-1 lg:order-2">
                   <div className="card-header-theme">Group Ledger</div>
                   <div className="divide-y divide-border-theme">
-                    {transactions.filter(tx => tx.groupId === selectedGroup.id).length === 0 ? (
+                    {transactions.filter(tx => tx.group_id === selectedGroup.id).length === 0 ? (
                       <div className="p-12 text-center space-y-3">
                         <div className="inline-flex p-4 bg-[#F4F7F9]/50 rounded-full text-[#CBD5E1]">
                           <CreditCard size={32} />
@@ -1146,20 +1228,20 @@ export default function AbonoShareApp() {
                         <p className="text-ink-secondary text-sm">No group transactions yet.</p>
                       </div>
                     ) : (
-                      transactions.filter(tx => tx.groupId === selectedGroup.id).map((tx) => (
+                      transactions.filter(tx => tx.group_id === selectedGroup.id).map((tx) => (
                         <div 
                           key={tx.id}
                           onClick={() => { setSelectedTx(tx); setActiveView('detail'); }}
                           className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tx.payerId === user.uid ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                              {tx.payerId === user.uid ? <ArrowRight className="rotate-45" size={18} /> : <ArrowRight className="-rotate-135" size={18} />}
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tx.payer_id === user.id ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                              {tx.payer_id === user.id ? <ArrowRight className="rotate-45" size={18} /> : <ArrowRight className="-rotate-135" size={18} />}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="font-bold text-sm text-ink-primary">
-                                  {tx.payerId === user.uid ? `To ${allUsers[tx.recipientId]?.displayName || tx.recipientId.slice(0, 8)}` : `From ${allUsers[tx.payerId]?.displayName || tx.payerId.slice(0, 8)}`}
+                                  {tx.payer_id === user.id ? `To ${tx.recipient?.display_name || tx.recipient_id?.slice(0, 8)}` : `From ${tx.payer?.display_name || tx.payer_id?.slice(0, 8)}`}
                                 </p>
                                 {tx.category && <CategoryTag category={tx.category} />}
                               </div>
@@ -1169,7 +1251,7 @@ export default function AbonoShareApp() {
                           <div className="text-right">
                             <p className="font-bold text-ink-primary">₱{tx.amount.toFixed(2)}</p>
                             <p className="text-[10px] text-ink-secondary uppercase font-bold tracking-widest">
-                              {new Date(tx.createdAt?.seconds * 1000).toLocaleDateString()}
+                              {new Date(tx.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -1200,16 +1282,16 @@ export default function AbonoShareApp() {
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-2xl bg-brand/10 overflow-hidden border border-brand/20">
-                              {viewingProfile.photoURL ? (
-                                <Image src={viewingProfile.photoURL} alt="" width={64} height={64} className="object-cover" />
+                              {viewingProfile.photo_url ? (
+                                <Image src={viewingProfile.photo_url} alt="" width={64} height={64} className="object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-brand font-black text-xl">
-                                  {viewingProfile.displayName.slice(0, 2).toUpperCase()}
+                                  {(viewingProfile.display_name || '?').slice(0, 2).toUpperCase()}
                                 </div>
                               )}
                             </div>
                             <div>
-                              <h3 className="text-xl font-black text-ink-primary">{viewingProfile.displayName}</h3>
+                              <h3 className="text-xl font-black text-ink-primary">{viewingProfile.display_name}</h3>
                               <p className="text-xs text-ink-secondary font-bold uppercase tracking-widest">Member Profile</p>
                             </div>
                           </div>
@@ -1236,19 +1318,19 @@ export default function AbonoShareApp() {
                           )}
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">User ID</p>
-                            <p className="text-sm font-mono font-bold text-brand">{viewingProfile.uid}</p>
+                            <p className="text-sm font-mono font-bold text-brand">{viewingProfile.id}</p>
                           </div>
                         </div>
 
                         <div className="bg-[#F8FAFC] rounded-3xl p-6 text-center space-y-4 border border-border-theme">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payment QR Code</p>
                           <div className="w-40 h-40 mx-auto bg-white border-4 border-ink-primary p-2 relative shadow-inner">
-                            {viewingProfile.qrCodes?.primary ? (
-                              <Image 
-                                src={viewingProfile.qrCodes.primary} 
-                                alt="QR Code" 
-                                width={160} 
-                                height={160} 
+                            {viewingProfile.qr_url ? (
+                              <Image
+                                src={viewingProfile.qr_url}
+                                alt="QR Code"
+                                width={160}
+                                height={160}
                                 className="object-contain"
                                 referrerPolicy="no-referrer"
                               />
@@ -1260,7 +1342,7 @@ export default function AbonoShareApp() {
                             )}
                           </div>
                           <p className="text-[10px] text-ink-secondary leading-relaxed">
-                            Scan this code to pay {viewingProfile.displayName.split(' ')[0]} directly.
+                            Scan this code to pay {(viewingProfile.display_name || 'them').split(' ')[0]} directly.
                           </p>
                         </div>
 
@@ -1301,14 +1383,14 @@ export default function AbonoShareApp() {
                       </div>
                       <form onSubmit={handleAddMember} className="space-y-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">User ID / Email</label>
-                          <input 
-                            type="text" 
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile Number</label>
+                          <input
+                            type="text"
                             required
                             autoFocus
                             value={newMemberId}
                             onChange={(e) => setNewMemberId(e.target.value)}
-                            placeholder="e.g. user_456"
+                            placeholder="+63XXXXXXXXXX"
                             className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                           />
                         </div>
@@ -1367,12 +1449,12 @@ export default function AbonoShareApp() {
                 <div className="card-theme p-4 sm:p-6 glass">
                   <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Members</p>
                   <p className="text-xl sm:text-2xl font-black text-ink-primary">
-                    {new Set(groups.flatMap(g => g.members)).size}
+                    {new Set(groups.flatMap(g => (g.group_members || []).map(gm => gm.user_id))).size}
                   </p>
                 </div>
                 <div className="card-theme p-4 sm:p-6 glass">
                   <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Volume</p>
-                  <p className="text-xl sm:text-2xl font-black text-brand truncate">₱{groups.reduce((acc, g) => acc + g.totalSpent, 0).toLocaleString()}</p>
+                  <p className="text-xl sm:text-2xl font-black text-brand truncate">₱{transactions.reduce((acc, tx) => acc + Number(tx.amount || 0), 0).toLocaleString()}</p>
                 </div>
               </div>
 
@@ -1391,7 +1473,7 @@ export default function AbonoShareApp() {
                         </div>
                         <div className="text-right">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Total Spent</p>
-                          <p className="text-lg font-black text-ink-primary">₱{group.totalSpent.toLocaleString()}</p>
+                          <p className="text-lg font-black text-ink-primary">₱{transactions.filter(tx => tx.group_id === group.id).reduce((sum, tx) => sum + Number(tx.amount || 0), 0).toLocaleString()}</p>
                         </div>
                       </div>
                       
@@ -1399,24 +1481,24 @@ export default function AbonoShareApp() {
                         <h3 className="text-lg font-bold text-ink-primary">{group.name}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex -space-x-2">
-                            {group.members.slice(0, 3).map((m, i) => (
+                            {(group.group_members || []).slice(0, 3).map((gm, i) => (
                               <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[8px] font-bold">
-                                {m.slice(0, 1).toUpperCase()}
+                                {(gm.profiles?.display_name || gm.user_id).slice(0, 1).toUpperCase()}
                               </div>
                             ))}
-                            {group.members.length > 3 && (
+                            {(group.group_members || []).length > 3 && (
                               <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[8px] font-bold text-ink-secondary">
-                                +{group.members.length - 3}
+                                +{(group.group_members || []).length - 3}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-ink-secondary font-medium">{group.members.length} members</span>
+                          <span className="text-xs text-ink-secondary font-medium">{(group.group_members || []).length} members</span>
                         </div>
                       </div>
 
                       <div className="pt-4 border-t border-border-theme flex justify-between items-center">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
-                          Created {new Date(group.createdAt.seconds * 1000).toLocaleDateString()}
+                          Created {new Date(group.created_at).toLocaleDateString()}
                         </span>
                         <ChevronRight size={16} className="text-ink-secondary group-hover:text-brand transition-colors" />
                       </div>
@@ -1479,8 +1561,127 @@ export default function AbonoShareApp() {
             </motion.div>
           )}
 
+          {activeView === 'balances' && (
+            <motion.div
+              key="balances"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-ink-primary">Balances</h2>
+              </div>
+
+              <section className="card-theme glass overflow-hidden">
+                <div className="card-header-theme">Net Amounts Owed</div>
+                {(() => {
+                  const balances = computeBalances(transactions, user.id);
+                  if (balances.length === 0) {
+                    return (
+                      <div className="p-12 text-center space-y-3">
+                        <div className="inline-flex p-4 bg-[#F4F7F9]/50 rounded-full text-[#CBD5E1]">
+                          <CheckCircle2 size={32} />
+                        </div>
+                        <p className="text-ink-secondary text-sm font-medium">All settled up!</p>
+                        <p className="text-ink-secondary text-xs">No outstanding balances with anyone.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="divide-y divide-border-theme">
+                      {balances.map(({ profile, netAmount, direction }) => (
+                        <div
+                          key={profile?.id}
+                          onClick={() => { setBalanceCounterparty(profile); setActiveView('balance-detail'); }}
+                          className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${direction === 'they_owe' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                              {(profile?.display_name || '?').slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-ink-primary">{profile?.display_name || profile?.id?.slice(0, 8)}</p>
+                              <p className={`text-[10px] font-bold uppercase tracking-widest ${direction === 'they_owe' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {direction === 'they_owe' ? 'They owe you' : 'You owe them'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className={`font-black text-lg ${direction === 'they_owe' ? 'text-emerald-600' : 'text-red-500'}`}>
+                              ₱{netAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <ChevronRight size={16} className="text-ink-secondary group-hover:text-brand transition-colors" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </section>
+            </motion.div>
+          )}
+
+          {activeView === 'balance-detail' && balanceCounterparty && (
+            <motion.div
+              key="balance-detail"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setActiveView('balances')}
+                  className="p-2 rounded-xl bg-surface hover:bg-border-theme transition-colors text-ink-secondary"
+                >
+                  <ArrowRight size={18} className="rotate-180" />
+                </button>
+                <div>
+                  <h2 className="text-xl font-black text-ink-primary">{balanceCounterparty.display_name}</h2>
+                  <p className="text-xs text-ink-secondary font-medium">Transaction history</p>
+                </div>
+              </div>
+
+              <section className="card-theme glass overflow-hidden">
+                <div className="divide-y divide-border-theme">
+                  {transactions
+                    .filter(tx => tx.payer_id === balanceCounterparty.id || tx.recipient_id === balanceCounterparty.id)
+                    .map(tx => (
+                      <div
+                        key={tx.id}
+                        onClick={() => { setSelectedTx(tx); setActiveView('detail'); }}
+                        className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.payer_id === user.id ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                            {tx.payer_id === user.id ? <ArrowRight className="rotate-45" size={18} /> : <ArrowRight className="-rotate-135" size={18} />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="font-bold text-sm text-ink-primary">
+                                {tx.payer_id === user.id ? `To ${tx.recipient?.display_name || tx.recipient_id?.slice(0, 8)}` : `From ${tx.payer?.display_name || tx.payer_id?.slice(0, 8)}`}
+                              </p>
+                              {tx.category && <CategoryTag category={tx.category} />}
+                            </div>
+                            <StatusBadge status={tx.status} />
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-ink-primary">₱{Number(tx.amount).toFixed(2)}</p>
+                          <p className="text-[10px] text-ink-secondary uppercase font-bold tracking-widest">
+                            {new Date(tx.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </section>
+            </motion.div>
+          )}
+
           {activeView === 'settle-up' && (
-            <motion.div 
+            <motion.div
               key="settle-up"
               layout
               initial={{ opacity: 0, scale: 0.95 }}
@@ -1575,10 +1776,10 @@ export default function AbonoShareApp() {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payer</p>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
-                            {selectedTx.payerId.slice(0, 2).toUpperCase()}
+                            {selectedTx.payer?.display_name?.slice(0, 2).toUpperCase() || '??'}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-ink-primary">{allUsers[selectedTx.payerId]?.displayName || selectedTx.payerId}</p>
+                            <p className="text-sm font-bold text-ink-primary">{selectedTx.payer?.display_name || selectedTx.payer_id}</p>
                             <p className="text-[10px] text-ink-secondary">Sender</p>
                           </div>
                         </div>
@@ -1587,32 +1788,32 @@ export default function AbonoShareApp() {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient</p>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
-                            {selectedTx.recipientId.slice(0, 2).toUpperCase()}
+                            {selectedTx.recipient?.display_name?.slice(0, 2).toUpperCase() || '??'}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-ink-primary">{allUsers[selectedTx.recipientId]?.displayName || selectedTx.recipientId}</p>
+                            <p className="text-sm font-bold text-ink-primary">{selectedTx.recipient?.display_name || selectedTx.recipient_id}</p>
                             <p className="text-[10px] text-ink-secondary">Receiver</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {selectedTx.receiptUrl && (
+                    {receiptSignedUrl && (
                       <div className="space-y-4">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Proof of Payment</p>
                         <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-border-theme bg-gray-100 group">
-                          <Image 
-                            src={selectedTx.receiptUrl} 
-                            alt="Receipt" 
-                            fill 
+                          <Image
+                            src={receiptSignedUrl}
+                            alt="Receipt"
+                            fill
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <a 
-                              href={selectedTx.receiptUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
+                            <a
+                              href={receiptSignedUrl}
+                              target="_blank"
+                              rel="noreferrer"
                               className="px-4 py-2 bg-white rounded-xl font-bold text-xs shadow-xl"
                             >
                               View Original
@@ -1622,7 +1823,7 @@ export default function AbonoShareApp() {
                       </div>
                     )}
 
-                    {selectedTx.status === 'unpaid' && selectedTx.payerId === user.uid && (
+                    {selectedTx.status === 'unpaid' && selectedTx.payer_id === user.id && (
                       <button 
                         onClick={() => handleSettleUp(selectedTx)}
                         className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98]"
@@ -1631,7 +1832,7 @@ export default function AbonoShareApp() {
                       </button>
                     )}
 
-                    {selectedTx.status === 'pending' && selectedTx.recipientId === user.uid && (
+                    {selectedTx.status === 'pending' && selectedTx.recipient_id === user.id && (
                       <div className="space-y-4">
                         <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3 text-xs text-amber-800">
                           <AlertCircle size={16} className="shrink-0" />
@@ -1661,31 +1862,31 @@ export default function AbonoShareApp() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-ink-primary">Request Created</p>
-                        <p className="text-[10px] text-ink-secondary">{new Date(selectedTx.createdAt?.seconds * 1000).toLocaleString()}</p>
+                        <p className="text-[10px] text-ink-secondary">{new Date(selectedTx.created_at).toLocaleString()}</p>
                       </div>
                     </div>
 
-                    {selectedTx.paidAt && (
+                    {selectedTx.paid_at && (
                       <div className="relative flex gap-4">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 border-4 border-white ${selectedTx.status === 'pending' ? 'bg-brand/10 text-brand' : 'bg-success/10 text-success'}`}>
                           <Upload size={14} />
                         </div>
                         <div>
                           <p className="text-xs font-bold text-ink-primary">Proof Submitted</p>
-                          <p className="text-[10px] text-ink-secondary">{new Date(selectedTx.paidAt?.seconds * 1000).toLocaleString()}</p>
+                          <p className="text-[10px] text-ink-secondary">{new Date(selectedTx.paid_at).toLocaleString()}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className={`relative flex gap-4 ${!selectedTx.verifiedAt ? 'opacity-40' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 border-4 border-white ${selectedTx.verifiedAt ? 'bg-success/10 text-success' : 'bg-gray-100 text-gray-400'}`}>
+                    <div className={`relative flex gap-4 ${!selectedTx.verified_at ? 'opacity-40' : ''}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 border-4 border-white ${selectedTx.verified_at ? 'bg-success/10 text-success' : 'bg-gray-100 text-gray-400'}`}>
                         <CheckCircle2 size={14} />
                       </div>
                       <div>
                         <p className="text-xs font-bold text-ink-primary">Verified</p>
                         <p className="text-[10px] text-ink-secondary">
-                          {selectedTx.verifiedAt 
-                            ? new Date(selectedTx.verifiedAt?.seconds * 1000).toLocaleString() 
+                          {selectedTx.verified_at
+                            ? new Date(selectedTx.verified_at).toLocaleString()
                             : 'Awaiting approval'}
                         </p>
                       </div>
@@ -1700,7 +1901,7 @@ export default function AbonoShareApp() {
     </main>
 
       {/* Floating Action for Mobile */}
-      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active') && (
+      {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail') && (
         <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-50">
           <button 
             onClick={createNewBill}
@@ -1783,13 +1984,13 @@ export default function AbonoShareApp() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient ID</label>
-                      <input 
-                        type="text" 
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient Mobile</label>
+                      <input
+                        type="text"
                         required
                         value={newBillRecipient}
                         onChange={(e) => setNewBillRecipient(e.target.value)}
-                        placeholder="e.g. recipient_456"
+                        placeholder="+63XXXXXXXXXX"
                         className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                       />
                     </div>
