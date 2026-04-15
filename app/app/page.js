@@ -46,6 +46,11 @@ import {
   removeGroupMember,
   findProfileByMobile,
   computeBalances,
+  getPublicGroups,
+  applyToGroup,
+  getJoinRequests,
+  approveJoinRequest,
+  declineJoinRequest,
 } from '../../lib/supabase/db';
 
 // --- Components ---
@@ -215,10 +220,16 @@ export default function AbonoShareApp() {
   const [authError, setAuthError] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail
+  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail, discover
   const [selectedTx, setSelectedTx] = useState(null);
   const [receiptSignedUrl, setReceiptSignedUrl] = useState(null);
   const [balanceCounterparty, setBalanceCounterparty] = useState(null);
+  const [discoverGroups, setDiscoverGroups] = useState([]);
+  const [viewingGroup, setViewingGroup] = useState(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState('');
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [newGroupIsPublic, setNewGroupIsPublic] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [settleStep, setSettleStep] = useState('qr'); // qr, upload
 
@@ -289,6 +300,14 @@ export default function AbonoShareApp() {
         });
         setTransactions(txs);
         setGroups(grps);
+        const [discover, requests] = await Promise.all([
+          getPublicGroups(supabase),
+          getJoinRequests(supabase),
+        ]);
+        if (active) {
+          setDiscoverGroups(discover);
+          setJoinRequests(requests);
+        }
 
         // Build allUsers map from joined transaction participant data
         const usersMap = { [userId]: profile };
@@ -956,6 +975,13 @@ export default function AbonoShareApp() {
             <UsersRound size={18} />
             Groups
           </button>
+          <button
+            onClick={() => setActiveView('discover')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'discover' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
+          >
+            <Search size={18} />
+            Discover
+          </button>
           <div className="mt-auto pt-4 border-t border-border-theme">
             <button className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-ink-secondary hover:bg-surface hover:text-ink-primary transition-all w-full">
               <Settings size={18} />
@@ -993,6 +1019,13 @@ export default function AbonoShareApp() {
           >
             <UsersRound size={22} />
             <span className="text-[10px] font-bold uppercase tracking-wide">Groups</span>
+          </button>
+          <button
+            onClick={() => setActiveView('discover')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'discover' ? 'text-brand' : 'text-ink-secondary'}`}
+          >
+            <Search size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Discover</span>
           </button>
           <button className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-ink-secondary">
             <Settings size={22} />
@@ -1599,6 +1632,66 @@ export default function AbonoShareApp() {
             </motion.div>
           )}
 
+          {activeView === 'discover' && (
+            <motion.div
+              key="discover"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-ink-primary">Discover Groups</h2>
+              </div>
+
+              <section className="card-theme glass overflow-hidden">
+                <div className="card-header-theme">Leaderboard — Top Groups by Total Settled</div>
+                {discoverGroups.length === 0 ? (
+                  <div className="p-12 text-center space-y-3">
+                    <div className="inline-flex p-4 bg-[#F4F7F9]/50 rounded-full text-[#CBD5E1]">
+                      <UsersRound size={32} />
+                    </div>
+                    <p className="text-ink-secondary text-sm font-medium">No groups yet.</p>
+                    <p className="text-ink-secondary text-xs">Be the first — create a group!</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border-theme">
+                    {discoverGroups.map((group, index) => {
+                      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+                      const memberCount = (group.group_members || []).length;
+                      return (
+                        <div
+                          key={group.id}
+                          onClick={() => setViewingGroup(group)}
+                          className="p-4 flex items-center justify-between hover:bg-[#F4F7F9]/50 cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-9 h-9 flex items-center justify-center font-black text-base shrink-0">
+                              {medal || <span className="text-sm text-ink-secondary font-bold">#{index + 1}</span>}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-ink-primary">{group.name}</p>
+                              <p className="text-[10px] text-ink-secondary font-medium">
+                                {memberCount} member{memberCount !== 1 ? 's' : ''} · {group.is_public ? 'Public' : 'Invite-only'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <p className="font-black text-ink-primary">₱{Number(group.total_settled).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                              <p className="text-[10px] text-ink-secondary uppercase font-bold tracking-widest">settled</p>
+                            </div>
+                            <ChevronRight size={16} className="text-ink-secondary group-hover:text-brand transition-colors" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </motion.div>
+          )}
+
           {activeView === 'balances' && (
             <motion.div
               key="balances"
@@ -1937,6 +2030,139 @@ export default function AbonoShareApp() {
         </AnimatePresence>
       </div>
     </main>
+
+          {/* Group Profile Sheet */}
+          <AnimatePresence>
+            {viewingGroup && (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => { setViewingGroup(null); setIsApplying(false); setApplyMessage(''); }}
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ y: '100%', opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: '100%', opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                  className="relative w-full sm:max-w-sm glass rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-5"
+                >
+                  {!isApplying ? (
+                    <>
+                      {/* Group info */}
+                      <div className="text-center space-y-2">
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-brand/10 text-brand rounded-2xl">
+                          <UsersRound size={28} />
+                        </div>
+                        <h3 className="text-xl font-black text-ink-primary">{viewingGroup.name}</h3>
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">
+                            {(viewingGroup.group_members || []).length} members
+                          </span>
+                          <span className="text-ink-secondary">·</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${viewingGroup.is_public ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                            {viewingGroup.is_public ? 'Public' : 'Invite-only'}
+                          </span>
+                        </div>
+                        <p className="text-2xl font-black text-brand">
+                          ₱{Number(viewingGroup.total_settled).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <span className="text-xs font-bold text-ink-secondary ml-1">settled</span>
+                        </p>
+                      </div>
+
+                      {/* Action */}
+                      {(() => {
+                        const isMember = (viewingGroup.group_members || []).some(gm => gm.user_id === user.id);
+                        const hasPending = joinRequests.some(r => r.group_id === viewingGroup.id && r.user_id === user.id);
+                        if (isMember) {
+                          return (
+                            <div className="w-full py-3 text-center text-sm font-bold text-emerald-600 bg-emerald-50 rounded-2xl">
+                              ✓ You&apos;re in this group
+                            </div>
+                          );
+                        }
+                        if (hasPending) {
+                          return (
+                            <div className="w-full py-3 text-center text-sm font-bold text-amber-600 bg-amber-50 rounded-2xl">
+                              Application Pending
+                            </div>
+                          );
+                        }
+                        if (!viewingGroup.is_public) {
+                          return (
+                            <div className="w-full py-3 text-center text-sm font-bold text-ink-secondary bg-surface rounded-2xl">
+                              Invite-only — contact the creator to join
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            onClick={() => setIsApplying(true)}
+                            className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-sm shadow-lg shadow-brand/20 hover:scale-[1.02] transition-all"
+                          >
+                            Apply to Join
+                          </button>
+                        );
+                      })()}
+
+                      <button
+                        onClick={() => { setViewingGroup(null); setApplyMessage(''); }}
+                        className="w-full py-3 text-sm font-bold text-ink-secondary hover:text-ink-primary transition-colors"
+                      >
+                        Close
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Apply form */}
+                      <div className="text-center space-y-1">
+                        <h3 className="text-lg font-black text-ink-primary">Join {viewingGroup.name}</h3>
+                        <p className="text-xs text-ink-secondary">Introduce yourself to the group creator.</p>
+                      </div>
+                      <textarea
+                        value={applyMessage}
+                        onChange={(e) => setApplyMessage(e.target.value.slice(0, 200))}
+                        placeholder="Introduce yourself... (optional)"
+                        rows={4}
+                        className="w-full px-4 py-3 bg-surface border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium text-ink-primary resize-none"
+                      />
+                      <p className="text-[10px] text-ink-secondary text-right">{applyMessage.length}/200</p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setIsApplying(false)}
+                          className="flex-1 py-3 text-sm font-bold text-ink-secondary hover:bg-surface rounded-2xl transition-colors"
+                        >
+                          Back
+                        </button>
+                        <button
+                          disabled={loading}
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              await applyToGroup(supabase, viewingGroup.id, applyMessage);
+                              const refreshed = await getJoinRequests(supabase);
+                              setJoinRequests(refreshed);
+                              setIsApplying(false);
+                              setApplyMessage('');
+                            } catch (err) {
+                              console.error('Failed to apply:', err);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="flex-1 py-3 bg-brand text-white rounded-2xl font-bold text-sm shadow-lg shadow-brand/20 disabled:opacity-50"
+                        >
+                          {loading ? 'Sending...' : 'Send Application'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
       {/* Floating Action for Mobile */}
       {(activeView === 'dashboard' || activeView === 'groups' || activeView === 'active' || activeView === 'balances' || activeView === 'balance-detail') && (
