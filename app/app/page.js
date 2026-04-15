@@ -230,6 +230,7 @@ export default function AbonoShareApp() {
   const [applyMessage, setApplyMessage] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
   const [newGroupIsPublic, setNewGroupIsPublic] = useState(true);
+  const [demoBlocked, setDemoBlocked] = useState(false);
   const [isManagingQr, setIsManagingQr] = useState(false);
   const [qrUploading, setQrUploading] = useState(null); // 'primary' | 'secondary' | 'tertiary' | null
   const [settingsName, setSettingsName] = useState('');
@@ -272,6 +273,17 @@ export default function AbonoShareApp() {
     }
     localStorage.setItem('abonoshare_dark_mode', darkMode);
   }, [darkMode]);
+
+  const isDemoUser = user?.email === 'demo@abonoshare.app';
+
+  const guardDemo = () => {
+    if (isDemoUser) {
+      setDemoBlocked(true);
+      setTimeout(() => setDemoBlocked(false), 3000);
+      return true;
+    }
+    return false;
+  };
 
   // Sync settings form when entering settings view
   useEffect(() => {
@@ -452,6 +464,7 @@ export default function AbonoShareApp() {
   };
 
   const handleUploadReceipt = async (file) => {
+    if (guardDemo()) return;
     if (!selectedTx) return;
     setLoading(true);
     try {
@@ -469,6 +482,7 @@ export default function AbonoShareApp() {
   };
 
   const handleVerifyPayment = async (txId) => {
+    if (guardDemo()) return;
     setLoading(true);
     try {
       await settleTransaction(supabase, txId);
@@ -485,6 +499,7 @@ export default function AbonoShareApp() {
 
   const handleCreateBill = async (e) => {
     e.preventDefault();
+    if (guardDemo()) return;
     if (!newBillAmount || !newBillRecipient) return;
     setLoading(true);
     try {
@@ -523,6 +538,7 @@ export default function AbonoShareApp() {
 
   const handleCreateGroup = async (e) => {
     e.preventDefault();
+    if (guardDemo()) return;
     if (!newGroupName) return;
     setLoading(true);
     try {
@@ -541,6 +557,7 @@ export default function AbonoShareApp() {
 
   const handleAddMember = async (e) => {
     e.preventDefault();
+    if (guardDemo()) return;
     if (!newMemberId || !selectedGroup) return;
     setLoading(true);
     try {
@@ -564,6 +581,7 @@ export default function AbonoShareApp() {
   };
 
   const handleRemoveMember = async (memberId) => {
+    if (guardDemo()) return;
     if (!selectedGroup) return;
     setLoading(true);
     try {
@@ -1285,6 +1303,7 @@ export default function AbonoShareApp() {
                           <div className="flex gap-2 shrink-0">
                             <button
                               onClick={async () => {
+                                if (guardDemo()) return;
                                 setLoading(true);
                                 try {
                                   await approveJoinRequest(supabase, req.id, req.group_id, req.user_id);
@@ -1308,6 +1327,7 @@ export default function AbonoShareApp() {
                             </button>
                             <button
                               onClick={async () => {
+                                if (guardDemo()) return;
                                 setLoading(true);
                                 try {
                                   await declineJoinRequest(supabase, req.id);
@@ -1782,6 +1802,7 @@ export default function AbonoShareApp() {
                   <button
                     disabled={settingsSaving}
                     onClick={async () => {
+                      if (guardDemo()) return;
                       setSettingsSaving(true);
                       try {
                         const updated = await updateProfile(supabase, user.id, {
@@ -1812,6 +1833,7 @@ export default function AbonoShareApp() {
                   </div>
                   <button
                     onClick={async () => {
+                      if (guardDemo()) return;
                       const next = !user?.discoverable;
                       setUser(prev => ({ ...prev, discoverable: next }));
                       await updateProfile(supabase, user.id, { discoverable: next });
@@ -2278,6 +2300,21 @@ export default function AbonoShareApp() {
       </div>
     </main>
 
+          {/* Demo read-only toast */}
+          <AnimatePresence>
+            {demoBlocked && (
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 40 }}
+                className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 bg-[#1A1C1E] text-white rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-2 whitespace-nowrap"
+              >
+                <span>🔒</span>
+                Demo account is read-only. Sign up to save your data.
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Manage QR Codes Modal */}
           <AnimatePresence>
             {isManagingQr && (
@@ -2327,6 +2364,7 @@ export default function AbonoShareApp() {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
+                              if (guardDemo()) return;
                               setQrUploading(slot);
                               try {
                                 const path = await uploadQrCode(supabase, user.id, slot, file);
@@ -2460,6 +2498,7 @@ export default function AbonoShareApp() {
                         <button
                           disabled={loading}
                           onClick={async () => {
+                            if (guardDemo()) return;
                             setLoading(true);
                             try {
                               await applyToGroup(supabase, viewingGroup.id, applyMessage);
