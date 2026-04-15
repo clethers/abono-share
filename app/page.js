@@ -993,10 +993,6 @@ export default function AbonoShareApp() {
                         }, 0).toFixed(2)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-ink-secondary uppercase tracking-widest">
-                      <ShieldCheck size={14} className="text-success" />
-                      Trust Score: 98%
-                    </div>
                   </section>
 
                   {/* Payment Slots - Now more compact */}
