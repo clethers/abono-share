@@ -10,6 +10,7 @@ import {
   CreditCard,
   Smartphone,
 } from 'lucide-react';
+import ThemeToggle from './components/ThemeToggle';
 
 const features = [
   {
@@ -215,23 +216,26 @@ function GroupScreen() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#F4F7F9] text-[#1A1C1E] font-sans">
+    <div className="min-h-screen bg-[#F4F7F9] dark:bg-[#0F172A] text-[#1A1C1E] dark:text-[#F8FAFC] font-sans transition-colors duration-300">
 
       {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#E2E8F0] px-5 sm:px-10 lg:px-16 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2 font-black text-xl tracking-tighter text-[#1A1C1E]">
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-white/10 px-5 sm:px-10 lg:px-16 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2 font-black text-xl tracking-tighter text-[#1A1C1E] dark:text-white">
           <div className="w-7 h-7 bg-[#2563EB] rounded-[6px] flex items-center justify-center">
             <ShieldCheck size={16} className="text-white" />
           </div>
           AbonoShare
         </div>
-        <Link
-          href="/app"
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#2563EB] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all active:scale-95"
-        >
-          Open App
-          <ArrowRight size={16} />
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link
+            href="/app"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#2563EB] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all active:scale-95"
+          >
+            Open App
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -243,11 +247,11 @@ export default function LandingPage() {
               <ShieldCheck size={13} />
               High-trust bill splitting
             </div>
-            <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-[#1A1C1E] leading-[1.05]">
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-[#1A1C1E] dark:text-white leading-[1.05]">
               Split bills.<br />
               <span className="text-[#2563EB]">Not trust.</span>
             </h1>
-            <p className="text-lg text-[#6C727A] leading-relaxed">
+            <p className="text-lg text-[#6C727A] dark:text-[#94A3B8] leading-relaxed">
               AbonoShare makes every peso traceable. Mandatory receipt verification, QR code payments, and settlement history — so no one ever has to take anyone's word for it.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -265,7 +269,7 @@ export default function LandingPage() {
                 See how it works
               </a>
             </div>
-            <p className="text-xs text-[#94A3B8] font-medium">Free to use · No account required to start · Works on any device</p>
+            <p className="text-xs text-[#94A3B8] dark:text-[#64748B] font-medium">Free to use · No account required to start · Works on any device</p>
           </div>
 
           {/* Phone mockups */}
@@ -284,18 +288,18 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-white border-y border-[#E2E8F0] px-5 sm:px-10 lg:px-16 py-20">
+      <section className="bg-white dark:bg-[#1E293B] border-y border-[#E2E8F0] dark:border-white/10 px-5 sm:px-10 lg:px-16 py-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#2563EB] mb-3">The Process</p>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E]">How AbonoShare works</h2>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E] dark:text-white">How AbonoShare works</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((step) => (
               <div key={step.number} className="relative">
-                <div className="text-5xl font-black text-[#E2E8F0] mb-3 leading-none">{step.number}</div>
-                <h3 className="text-base font-black text-[#1A1C1E] mb-2">{step.title}</h3>
-                <p className="text-sm text-[#6C727A] leading-relaxed">{step.desc}</p>
+                <div className="text-5xl font-black text-[#E2E8F0] dark:text-white/10 mb-3 leading-none">{step.number}</div>
+                <h3 className="text-base font-black text-[#1A1C1E] dark:text-white mb-2">{step.title}</h3>
+                <p className="text-sm text-[#6C727A] dark:text-[#94A3B8] leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -306,19 +310,19 @@ export default function LandingPage() {
       <section id="features" className="px-5 sm:px-10 lg:px-16 py-24 max-w-7xl mx-auto">
         <div className="text-center mb-14">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#2563EB] mb-3">Features</p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E]">Everything you need to settle up right</h2>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E] dark:text-white">Everything you need to settle up right</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-white rounded-2xl border border-[#E2E8F0] p-6 hover:border-[#2563EB]/30 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
+              className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-6 hover:border-[#2563EB]/30 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
             >
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${f.color}`}>
                 <f.icon size={22} />
               </div>
-              <h3 className="text-base font-black text-[#1A1C1E] mb-2">{f.title}</h3>
-              <p className="text-sm text-[#6C727A] leading-relaxed">{f.desc}</p>
+              <h3 className="text-base font-black text-[#1A1C1E] dark:text-white mb-2">{f.title}</h3>
+              <p className="text-sm text-[#6C727A] dark:text-[#94A3B8] leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -365,10 +369,10 @@ export default function LandingPage() {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-[#2563EB] text-white rounded-2xl shadow-xl shadow-blue-500/30 mb-2">
           <ShieldCheck size={32} />
         </div>
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E]">
+        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1C1E] dark:text-white">
           Ready to split the right way?
         </h2>
-        <p className="text-lg text-[#6C727A]">No sign-up friction. Open the app and start settling in seconds.</p>
+        <p className="text-lg text-[#6C727A] dark:text-[#94A3B8]">No sign-up friction. Open the app and start settling in seconds.</p>
         <Link
           href="/app"
           className="inline-flex items-center gap-3 px-10 py-5 bg-[#2563EB] text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all active:scale-95"
@@ -380,8 +384,8 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#E2E8F0] px-5 sm:px-10 lg:px-16 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
-        <div className="flex items-center gap-2 font-black text-base text-[#1A1C1E]">
+      <footer className="border-t border-[#E2E8F0] dark:border-white/10 px-5 sm:px-10 lg:px-16 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
+        <div className="flex items-center gap-2 font-black text-base text-[#1A1C1E] dark:text-white">
           <div className="w-6 h-6 bg-[#2563EB] rounded-[5px] flex items-center justify-center">
             <ShieldCheck size={13} className="text-white" />
           </div>
