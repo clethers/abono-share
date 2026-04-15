@@ -641,7 +641,7 @@ export default function AbonoShareApp() {
       <header className="h-12 shrink-0 glass border-b border-border-theme px-4 sm:px-8 flex items-center justify-between z-30">
         <div className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tighter">
           <div className="w-5 h-5 bg-brand rounded-[4px]" />
-          TrustSplit
+          AbonoShare
         </div>
         <div className="flex items-center gap-2 sm:gap-4 text-[12px] sm:text-[13px] font-medium">
           <button 
