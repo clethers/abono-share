@@ -1,6 +1,6 @@
 {
   "name": "AbonoShare",
-  "description": "High-trust bill splitting with mandatory receipt verification and settlement audit trails.",
+  "description": "High-trust bill splitting with mandatory receipt verification and settlement history.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

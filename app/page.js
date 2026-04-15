@@ -291,25 +291,25 @@ const MOCK_GROUPS = [
 
 // --- Main App ---
 
-export default function AuditTrailApp() {
+export default function AbonoShareApp() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('audit_trail_user');
+      const saved = localStorage.getItem('abonoshare_user');
       return saved ? JSON.parse(saved) : null;
     }
     return null;
   });
   const [transactions, setTransactions] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('audit_trail_txs');
+      const saved = localStorage.getItem('abonoshare_txs');
       return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
     }
     return INITIAL_TRANSACTIONS;
   });
   const [allUsers, setAllUsers] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('audit_trail_all_users');
+      const saved = localStorage.getItem('abonoshare_all_users');
       return saved ? JSON.parse(saved) : MOCK_USERS;
     }
     return MOCK_USERS;
@@ -338,7 +338,7 @@ export default function AuditTrailApp() {
   const [registrationQrUrl, setRegistrationQrUrl] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('audit_trail_dark_mode');
+      const saved = localStorage.getItem('abonoshare_dark_mode');
       return saved === 'true';
     }
     return false;
@@ -351,7 +351,7 @@ export default function AuditTrailApp() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('audit_trail_dark_mode', darkMode);
+    localStorage.setItem('abonoshare_dark_mode', darkMode);
   }, [darkMode]);
 
   // Load data from localStorage on mount
@@ -364,12 +364,12 @@ export default function AuditTrailApp() {
   useEffect(() => {
     if (mounted) {
       if (user) {
-        localStorage.setItem('audit_trail_user', JSON.stringify(user));
+        localStorage.setItem('abonoshare_user', JSON.stringify(user));
       } else {
-        localStorage.removeItem('audit_trail_user');
+        localStorage.removeItem('abonoshare_user');
       }
-      localStorage.setItem('audit_trail_txs', JSON.stringify(transactions));
-      localStorage.setItem('audit_trail_all_users', JSON.stringify(allUsers));
+      localStorage.setItem('abonoshare_txs', JSON.stringify(transactions));
+      localStorage.setItem('abonoshare_all_users', JSON.stringify(allUsers));
     }
   }, [user, transactions, allUsers, mounted]);
 
@@ -397,7 +397,7 @@ export default function AuditTrailApp() {
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('audit_trail_user');
+    localStorage.removeItem('abonoshare_user');
   };
 
   const handleSettleUp = (tx) => {
@@ -598,8 +598,8 @@ export default function AuditTrailApp() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-brand text-white rounded-2xl shadow-lg mb-4">
               <ShieldCheck size={32} />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-ink-primary">AuditTrail</h1>
-            <p className="text-ink-secondary">High-trust bill splitting with mandatory audit trails.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-ink-primary">AbonoShare</h1>
+            <p className="text-ink-secondary">High-trust bill splitting with receipt verification.</p>
           </div>
           
           <div className="space-y-4">
@@ -1532,7 +1532,7 @@ export default function AuditTrailApp() {
 
                 {/* Sidebar: Audit & Timeline */}
                 <section className="card-theme glass h-fit">
-                  <div className="card-header-theme">Audit Trail</div>
+                  <div className="card-header-theme">Settlement History</div>
                   <div className="p-6 space-y-8 relative">
                     <div className="absolute left-[31px] top-8 bottom-8 w-[1px] bg-border-theme" />
                     
