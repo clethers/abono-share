@@ -45,6 +45,7 @@ import {
   addGroupMember,
   removeGroupMember,
   findProfileByMobile,
+  findProfile,
   computeBalances,
   getPublicGroups,
   applyToGroup,
@@ -528,7 +529,7 @@ export default function AbonoShareApp() {
     setNewBillError('');
     setLoading(true);
     try {
-      const recipientProfile = await findProfileByMobile(supabase, newBillRecipient);
+      const recipientProfile = await findProfile(supabase, newBillRecipient);
       if (!recipientProfile) {
         setNewBillError('No user found with that mobile number.');
         return;
@@ -586,7 +587,7 @@ export default function AbonoShareApp() {
     if (!newMemberId || !selectedGroup) return;
     setLoading(true);
     try {
-      const profile = await findProfileByMobile(supabase, newMemberId);
+      const profile = await findProfile(supabase, newMemberId);
       if (!profile) {
         setAuthError('No user found with that mobile number.');
         setLoading(false);
@@ -1586,14 +1587,14 @@ export default function AbonoShareApp() {
                       </div>
                       <form onSubmit={handleAddMember} className="space-y-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile Number</label>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile or Email</label>
                           <input
                             type="text"
                             required
                             autoFocus
                             value={newMemberId}
                             onChange={(e) => setNewMemberId(e.target.value)}
-                            placeholder="+63XXXXXXXXXX"
+                            placeholder="+63XXXXXXXXXX or email@example.com"
                             className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                           />
                         </div>
@@ -2627,13 +2628,13 @@ export default function AbonoShareApp() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient Mobile</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient Mobile or Email</label>
                       <input
                         type="text"
                         required
                         value={newBillRecipient}
                         onChange={(e) => setNewBillRecipient(e.target.value)}
-                        placeholder="+63XXXXXXXXXX"
+                        placeholder="+63XXXXXXXXXX or email@example.com"
                         className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                       />
                     </div>
