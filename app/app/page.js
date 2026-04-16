@@ -252,6 +252,7 @@ export default function AbonoShareApp() {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState('');
   const [viewingProfile, setViewingProfile] = useState(null);
+  const [viewingProfileQrUrl, setViewingProfileQrUrl] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
   const [registrationData, setRegistrationData] = useState({ displayName: '', mobile: '', email: '', password: '' });
@@ -385,6 +386,24 @@ export default function AbonoShareApp() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [selectedTx, supabase]);
+
+  useEffect(() => {
+    setViewingProfileQrUrl(null);
+    if (!viewingProfile) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getQrCodes, getQrSignedUrl } = await import('../../lib/supabase/db');
+        const codes = await getQrCodes(supabase, viewingProfile.id);
+        const primary = codes?.find(c => c.slot === 'primary') || codes?.[0];
+        if (primary?.storage_path) {
+          const url = await getQrSignedUrl(supabase, primary.storage_path);
+          if (!cancelled) setViewingProfileQrUrl(url);
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [viewingProfile, supabase]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -1504,18 +1523,14 @@ export default function AbonoShareApp() {
                               <p className="text-sm font-medium text-ink-primary">{viewingProfile.email}</p>
                             </div>
                           )}
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">User ID</p>
-                            <p className="text-sm font-mono font-bold text-brand">{viewingProfile.id}</p>
-                          </div>
                         </div>
 
                         <div className="bg-[#F8FAFC] rounded-3xl p-6 text-center space-y-4 border border-border-theme">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payment QR Code</p>
                           <div className="w-40 h-40 mx-auto bg-white border-4 border-ink-primary p-2 relative shadow-inner">
-                            {viewingProfile.qr_url ? (
+                            {viewingProfileQrUrl ? (
                               <Image
-                                src={viewingProfile.qr_url}
+                                src={viewingProfileQrUrl}
                                 alt="QR Code"
                                 width={160}
                                 height={160}
