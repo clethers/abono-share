@@ -212,6 +212,8 @@ const ReceiptUpload = ({ onUpload, onCancel }) => {
 
 // --- Main App ---
 
+const RESTORABLE_VIEWS = ['active', 'dashboard', 'groups', 'balances', 'discover', 'settings'];
+
 export default function AbonoShareApp() {
   const [mounted, setMounted] = useState(false);
   const [supabase] = useState(() => createClient());
@@ -223,7 +225,13 @@ export default function AbonoShareApp() {
   const [authError, setAuthError] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [activeView, setActiveView] = useState('active'); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail, discover, settings
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('abonoshare_active_view');
+      if (saved && RESTORABLE_VIEWS.includes(saved)) return saved;
+    }
+    return 'active';
+  }); // active, dashboard, settle-up, detail, add-bill, groups, balances, balance-detail, discover, settings
   const [selectedTx, setSelectedTx] = useState(null);
   const [receiptSignedUrl, setReceiptSignedUrl] = useState(null);
   const [balanceCounterparty, setBalanceCounterparty] = useState(null);
@@ -286,6 +294,12 @@ export default function AbonoShareApp() {
     }
     localStorage.setItem('abonoshare_dark_mode', darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    if (RESTORABLE_VIEWS.includes(activeView)) {
+      localStorage.setItem('abonoshare_active_view', activeView);
+    }
+  }, [activeView]);
 
   const isDemoUser = user?.email === 'demo@abonoshare.app';
 
@@ -362,22 +376,26 @@ export default function AbonoShareApp() {
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
       if (session?.user) {
         loadData(session.user.id);
       } else {
-        if (active) setLoading(false);
+        setLoading(false);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === 'SIGNED_IN') {
         loadData(session.user.id);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setTransactions([]);
         setGroups([]);
         setAllUsers({});
+        setLoading(false);
       }
+      // TOKEN_REFRESHED and INITIAL_SESSION are handled by getSession() above
     });
 
     setMounted(true);
@@ -2490,7 +2508,7 @@ export default function AbonoShareApp() {
                   Back to Ledger
                 </button>
                 <div className="flex gap-2 items-center">
-                  {selectedTx.status === 'unpaid' && selectedTx.payer_id === user.id && (
+                  {selectedTx.status === 'unpaid' && selectedTx.recipient_id === user.id && (
                     <button
                       onClick={() => handleSettleUp(selectedTx)}
                       className="px-4 py-2 bg-brand text-white rounded-xl font-bold text-xs shadow-lg shadow-brand/20 hover:opacity-90 transition-all active:scale-[0.98]"
@@ -2498,7 +2516,7 @@ export default function AbonoShareApp() {
                       Settle Now
                     </button>
                   )}
-                  {selectedTx.status === 'pending' && selectedTx.recipient_id === user.id && (
+                  {selectedTx.status === 'pending' && selectedTx.payer_id === user.id && (
                     <button
                       onClick={() => handleVerifyPayment(selectedTx.id)}
                       className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg hover:opacity-90 transition-all active:scale-[0.98]"
@@ -2581,8 +2599,8 @@ export default function AbonoShareApp() {
                       </div>
                     )}
 
-                    {selectedTx.status === 'unpaid' && selectedTx.payer_id === user.id && (
-                      <button 
+                    {selectedTx.status === 'unpaid' && selectedTx.recipient_id === user.id && (
+                      <button
                         onClick={() => handleSettleUp(selectedTx)}
                         className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98]"
                       >
@@ -2590,7 +2608,7 @@ export default function AbonoShareApp() {
                       </button>
                     )}
 
-                    {selectedTx.status === 'pending' && selectedTx.recipient_id === user.id && (
+                    {selectedTx.status === 'pending' && selectedTx.payer_id === user.id && (
                       <div className="space-y-4">
                         <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3 text-xs text-amber-800">
                           <AlertCircle size={16} className="shrink-0" />
