@@ -1529,13 +1529,11 @@ export default function AbonoShareApp() {
                           <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Payment QR Code</p>
                           <div className="w-40 h-40 mx-auto bg-white border-4 border-ink-primary p-2 relative shadow-inner">
                             {viewingProfileQrUrl ? (
-                              <Image
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
                                 src={viewingProfileQrUrl}
                                 alt="QR Code"
-                                width={160}
-                                height={160}
-                                className="object-contain"
-                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-contain"
                               />
                             ) : (
                               <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-300">
