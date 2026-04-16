@@ -1350,13 +1350,14 @@ export default function AbonoShareApp() {
             )}
 
           {activeView === 'group-detail' && selectedGroup && (
-            <motion.div 
+            <motion.div
               key="group-detail"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
+              {/* Back header */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <button
@@ -1367,7 +1368,9 @@ export default function AbonoShareApp() {
                   </button>
                   <div>
                     <h2 className="text-2xl font-black text-ink-primary">{selectedGroup.name}</h2>
-                    <p className="text-xs text-ink-secondary font-bold uppercase tracking-widest mt-1">Group Management</p>
+                    <p className="text-xs text-ink-secondary font-bold uppercase tracking-widest mt-1">
+                      {selectedGroup.created_by === user.id ? 'Group Management' : 'Group Info'}
+                    </p>
                   </div>
                 </div>
                 {selectedGroup.created_by === user.id && (
@@ -1381,6 +1384,92 @@ export default function AbonoShareApp() {
                 )}
               </div>
 
+              {/* Non-creator: read-only info + apply to join */}
+              {selectedGroup.created_by !== user.id && (() => {
+                const isMember = selectedGroup.group_members.some(gm => gm.user_id === user.id);
+                const hasPendingRequest = joinRequests.some(r => r.group_id === selectedGroup.id && r.user_id === user.id);
+                return (
+                  <div className="space-y-4">
+                    {/* Group info card */}
+                    <div className="card-theme glass p-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Members</p>
+                          <p className="text-2xl font-black text-ink-primary">{selectedGroup.group_members.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Total Paid</p>
+                          <p className="text-2xl font-black text-ink-primary">₱{Number(selectedGroup.total_settled || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Visibility</p>
+                          <p className="text-sm font-bold text-ink-primary">{selectedGroup.is_public ? 'Public' : 'Private'}</p>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t border-border-theme">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-3">Members</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedGroup.group_members.map(gm => {
+                            const p = gm.profiles || { display_name: gm.user_id };
+                            return (
+                              <span key={gm.user_id} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F8FAFC] border border-border-theme rounded-full text-xs font-bold text-ink-primary">
+                                <span className="w-4 h-4 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[8px] font-black">{(p.display_name || '?').slice(0,1).toUpperCase()}</span>
+                                {gm.user_id === user.id ? 'You' : (p.display_name || gm.user_id)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Apply / status */}
+                    {isMember ? (
+                      <div className="card-theme p-4 text-center">
+                        <p className="text-sm font-bold text-emerald-600">You are a member of this group.</p>
+                      </div>
+                    ) : hasPendingRequest ? (
+                      <div className="card-theme p-4 text-center">
+                        <p className="text-sm font-bold text-amber-600">Your join request is pending approval.</p>
+                      </div>
+                    ) : (
+                      <div className="card-theme glass p-6 space-y-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Request to Join</p>
+                        <textarea
+                          value={applyMessage}
+                          onChange={(e) => setApplyMessage(e.target.value)}
+                          placeholder="Add a short message (optional)…"
+                          rows={2}
+                          className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium resize-none"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (guardDemo()) return;
+                            setLoading(true);
+                            try {
+                              await applyToGroup(supabase, selectedGroup.id, applyMessage);
+                              const requests = await getJoinRequests(supabase);
+                              setJoinRequests(requests);
+                              setApplyMessage('');
+                            } catch (err) {
+                              console.error('Failed to apply:', err);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                          className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-sm shadow-lg shadow-brand/20 hover:opacity-90 transition-all disabled:opacity-50"
+                        >
+                          Apply to Join
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Creator-only content below */}
+              {selectedGroup.created_by === user.id && (
+              <div className="space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Join Requests — visible to creator only */}
                 {selectedGroup.created_by === user.id && joinRequests.filter(r => r.group_id === selectedGroup.id).length > 0 && (
@@ -1550,6 +1639,8 @@ export default function AbonoShareApp() {
                   </div>
                 </section>
               </div>
+              </div>
+              )}
 
               {/* Profile View Modal */}
               <AnimatePresence>
