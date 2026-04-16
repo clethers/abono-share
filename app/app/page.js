@@ -1842,7 +1842,7 @@ export default function AbonoShareApp() {
                   </p>
                 </div>
                 <div className="card-theme p-4 sm:p-6 glass">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Volume</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Total Paid</p>
                   <p className="text-xl sm:text-2xl font-black text-brand truncate">₱{transactions.reduce((acc, tx) => acc + Number(tx.amount || 0), 0).toLocaleString()}</p>
                 </div>
               </div>
@@ -2119,7 +2119,7 @@ export default function AbonoShareApp() {
               </div>
 
               <section className="card-theme glass overflow-hidden">
-                <div className="card-header-theme">Leaderboard — Top Groups by Total Settled</div>
+                <div className="card-header-theme">Leaderboard — Top Groups by Total Paid</div>
                 {discoverGroups.length === 0 ? (
                   <div className="p-12 text-center space-y-3">
                     <div className="inline-flex p-4 bg-[#F4F7F9]/50 rounded-full text-[#CBD5E1]">

@@ -185,7 +185,7 @@ function GroupScreen() {
       </div>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-1.5 px-3 mb-2">
-        {[['2', 'Groups'], ['4', 'Members'], ['₱16.5k', 'Volume']].map(([val, lbl]) => (
+        {[['2', 'Groups'], ['4', 'Members'], ['₱16.5k', 'Total Paid']].map(([val, lbl]) => (
           <div key={lbl} className="bg-white rounded-lg p-2 border border-[#E2E8F0] text-center">
             <p className="text-[10px] font-black text-[#1A1C1E]">{val}</p>
             <p className="text-[6px] font-bold uppercase text-[#6C727A]">{lbl}</p>
