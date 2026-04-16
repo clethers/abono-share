@@ -249,6 +249,7 @@ export default function AbonoShareApp() {
   const [newBillGroupId, setNewBillGroupId] = useState('');
   const [newBillCategory, setNewBillCategory] = useState('food');
   const [newBillError, setNewBillError] = useState('');
+  const [newBillRecipientId, setNewBillRecipientId] = useState(null);
   const [billSearchResults, setBillSearchResults] = useState([]);
   const [billSearchTimer, setBillSearchTimer] = useState(null);
 
@@ -534,18 +535,22 @@ export default function AbonoShareApp() {
   const handleCreateBill = async (e) => {
     e.preventDefault();
     if (guardDemo()) return;
-    if (!newBillAmount || !newBillRecipient) return;
+    if (!newBillAmount || (!newBillRecipientId && !newBillRecipient)) return;
     setNewBillError('');
     setLoading(true);
     try {
-      const recipientProfile = await findProfile(supabase, newBillRecipient);
-      if (!recipientProfile) {
-        setNewBillError('No user found with that mobile number.');
-        return;
+      let recipientId = newBillRecipientId;
+      if (!recipientId) {
+        const recipientProfile = await findProfile(supabase, newBillRecipient);
+        if (!recipientProfile) {
+          setNewBillError('No user found. Check the name, mobile, or email.');
+          return;
+        }
+        recipientId = recipientProfile.id;
       }
       await createTransaction(supabase, {
         payer_id: user.id,
-        recipient_id: recipientProfile.id,
+        recipient_id: recipientId,
         group_id: newBillGroupId || null,
         description: newBillDescription || 'Split Bill',
         amount: parseFloat(newBillAmount),
@@ -555,6 +560,7 @@ export default function AbonoShareApp() {
       setTransactions(refreshed);
       setNewBillAmount('');
       setNewBillRecipient('');
+      setNewBillRecipientId(null);
       setNewBillDescription('');
       setNewBillGroupId('');
       setNewBillCategory('food');
@@ -2792,22 +2798,55 @@ export default function AbonoShareApp() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Group (Optional)</label>
-                      <select 
-                        value={newBillGroupId}
-                        onChange={(e) => setNewBillGroupId(e.target.value)}
-                        className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium appearance-none"
-                      >
-                        <option value="">Personal (No Group)</option>
-                        {groups.map(g => (
-                          <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient</label>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Group (Optional)</label>
+                    <select
+                      value={newBillGroupId}
+                      onChange={(e) => {
+                        setNewBillGroupId(e.target.value);
+                        setNewBillRecipient('');
+                        setNewBillRecipientId(null);
+                        setBillSearchResults([]);
+                      }}
+                      className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium appearance-none"
+                    >
+                      <option value="">Personal (No Group)</option>
+                      {groups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Recipient — member picker if group selected, search otherwise */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Who owes you?</label>
+                    {newBillGroupId ? (
+                      /* Group selected → pick from members */
+                      <div className="grid grid-cols-2 gap-2">
+                        {(groups.find(g => g.id === newBillGroupId)?.group_members || [])
+                          .filter(gm => gm.user_id !== user.id)
+                          .map(gm => {
+                            const p = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
+                            const selected = newBillRecipientId === gm.user_id;
+                            return (
+                              <button
+                                key={gm.user_id}
+                                type="button"
+                                onClick={() => { setNewBillRecipientId(gm.user_id); setNewBillRecipient(''); }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selected ? 'border-brand bg-brand/5 shadow-sm' : 'border-border-theme bg-[#F8FAFC]/50 hover:border-brand/40'}`}
+                              >
+                                <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-black shrink-0 overflow-hidden">
+                                  {p.photo_url
+                                    ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                                    : (p.display_name || '?').slice(0, 2).toUpperCase()}
+                                </div>
+                                <span className={`text-sm font-bold truncate ${selected ? 'text-brand' : 'text-ink-primary'}`}>{p.display_name || gm.user_id}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      /* No group → search */
                       <div className="relative">
                         <input
                           type="text"
@@ -2817,6 +2856,7 @@ export default function AbonoShareApp() {
                           onChange={(e) => {
                             const val = e.target.value;
                             setNewBillRecipient(val);
+                            setNewBillRecipientId(null);
                             clearTimeout(billSearchTimer);
                             if (val.length < 2) { setBillSearchResults([]); return; }
                             const t = setTimeout(async () => {
@@ -2826,7 +2866,7 @@ export default function AbonoShareApp() {
                             setBillSearchTimer(t);
                           }}
                           onBlur={() => setTimeout(() => setBillSearchResults([]), 150)}
-                          placeholder="Name, mobile, or email…"
+                          placeholder="Search by name, mobile, or email…"
                           className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
                         />
                         {billSearchResults.length > 0 && (
@@ -2836,7 +2876,8 @@ export default function AbonoShareApp() {
                                 key={p.id}
                                 type="button"
                                 onMouseDown={() => {
-                                  setNewBillRecipient(p.mobile || p.email || '');
+                                  setNewBillRecipientId(p.id);
+                                  setNewBillRecipient(p.display_name || p.mobile || p.email || '');
                                   setBillSearchResults([]);
                                 }}
                                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 transition-colors text-left"
@@ -2855,7 +2896,7 @@ export default function AbonoShareApp() {
                           </div>
                         )}
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
