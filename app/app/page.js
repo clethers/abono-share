@@ -2490,8 +2490,6 @@ export default function AbonoShareApp() {
                   Back to Ledger
                 </button>
                 <div className="flex gap-2 items-center">
-                  {selectedTx.category && <CategoryTag category={selectedTx.category} />}
-                  <StatusBadge status={selectedTx.status} />
                   {selectedTx.status === 'unpaid' && selectedTx.payer_id === user.id && (
                     <button
                       onClick={() => handleSettleUp(selectedTx)}
@@ -2516,8 +2514,12 @@ export default function AbonoShareApp() {
                 <section className="card-theme lg:col-span-2 glass overflow-hidden">
                   <div className="card-header-theme">Transaction Detail</div>
                   <div className="p-5 sm:p-8 space-y-6 sm:space-y-8">
-                    <div className="flex justify-between items-end gap-4">
-                      <div className="space-y-1 min-w-0">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex gap-2 items-center">
+                          {selectedTx.category && <CategoryTag category={selectedTx.category} />}
+                          <StatusBadge status={selectedTx.status} />
+                        </div>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Settlement Amount</p>
                         <p className="text-3xl sm:text-5xl font-black text-ink-primary tracking-tight truncate">₱{selectedTx.amount.toFixed(2)}</p>
                       </div>
