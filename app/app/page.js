@@ -47,6 +47,7 @@ import {
   findProfileByMobile,
   findProfile,
   renameGroup,
+  searchProfiles,
   computeBalances,
   getPublicGroups,
   applyToGroup,
@@ -248,11 +249,15 @@ export default function AbonoShareApp() {
   const [newBillGroupId, setNewBillGroupId] = useState('');
   const [newBillCategory, setNewBillCategory] = useState('food');
   const [newBillError, setNewBillError] = useState('');
+  const [billSearchResults, setBillSearchResults] = useState([]);
+  const [billSearchTimer, setBillSearchTimer] = useState(null);
 
   // Form State for New Group
   const [newGroupName, setNewGroupName] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [memberSearchResults, setMemberSearchResults] = useState([]);
+  const [memberSearchTimer, setMemberSearchTimer] = useState(null);
   const [isGroupSettings, setIsGroupSettings] = useState(false);
   const [groupRenameValue, setGroupRenameValue] = useState('');
   const [groupSettingsError, setGroupSettingsError] = useState('');
@@ -1622,26 +1627,66 @@ export default function AbonoShareApp() {
                       </div>
                       <form onSubmit={handleAddMember} className="space-y-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Mobile or Email</label>
-                          <input
-                            type="text"
-                            required
-                            autoFocus
-                            value={newMemberId}
-                            onChange={(e) => setNewMemberId(e.target.value)}
-                            placeholder="+63XXXXXXXXXX or email@example.com"
-                            className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
-                          />
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Search by name, mobile, or email</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              autoFocus
+                              autoComplete="off"
+                              value={newMemberId}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNewMemberId(val);
+                                clearTimeout(memberSearchTimer);
+                                if (val.length < 2) { setMemberSearchResults([]); return; }
+                                const t = setTimeout(async () => {
+                                  const existingIds = [user.id, ...(selectedGroup?.group_members?.map(m => m.user_id) || [])];
+                                  const results = await searchProfiles(supabase, val, existingIds);
+                                  setMemberSearchResults(results);
+                                }, 300);
+                                setMemberSearchTimer(t);
+                              }}
+                              onBlur={() => setTimeout(() => setMemberSearchResults([]), 150)}
+                              placeholder="Name, +63XXXXXXXXXX, or email…"
+                              className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
+                            />
+                            {memberSearchResults.length > 0 && (
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-border-theme rounded-2xl shadow-xl z-10 overflow-hidden">
+                                {memberSearchResults.map(p => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onMouseDown={() => {
+                                      setNewMemberId(p.mobile || p.email || '');
+                                      setMemberSearchResults([]);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 transition-colors text-left"
+                                  >
+                                    <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-black shrink-0 overflow-hidden">
+                                      {p.photo_url
+                                        ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                                        : (p.display_name || '?').slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-bold text-ink-primary truncate">{p.display_name || '(no name)'}</p>
+                                      <p className="text-[11px] text-ink-secondary truncate">{p.mobile || p.email || ''}</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-3">
-                          <button 
+                          <button
                             type="button"
-                            onClick={() => setIsAddingMember(false)}
+                            onClick={() => { setIsAddingMember(false); setMemberSearchResults([]); }}
                             className="flex-1 py-3 text-sm font-bold text-ink-secondary hover:bg-gray-50 rounded-xl transition-colors"
                           >
                             Cancel
                           </button>
-                          <button 
+                          <button
                             type="submit"
                             className="flex-1 py-3 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20"
                           >
@@ -2762,15 +2807,54 @@ export default function AbonoShareApp() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient Mobile or Email</label>
-                      <input
-                        type="text"
-                        required
-                        value={newBillRecipient}
-                        onChange={(e) => setNewBillRecipient(e.target.value)}
-                        placeholder="+63XXXXXXXXXX or email@example.com"
-                        className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
-                      />
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Recipient</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          autoComplete="off"
+                          value={newBillRecipient}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewBillRecipient(val);
+                            clearTimeout(billSearchTimer);
+                            if (val.length < 2) { setBillSearchResults([]); return; }
+                            const t = setTimeout(async () => {
+                              const results = await searchProfiles(supabase, val, [user.id]);
+                              setBillSearchResults(results);
+                            }, 300);
+                            setBillSearchTimer(t);
+                          }}
+                          onBlur={() => setTimeout(() => setBillSearchResults([]), 150)}
+                          placeholder="Name, mobile, or email…"
+                          className="w-full px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
+                        />
+                        {billSearchResults.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-border-theme rounded-2xl shadow-xl z-10 overflow-hidden">
+                            {billSearchResults.map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setNewBillRecipient(p.mobile || p.email || '');
+                                  setBillSearchResults([]);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 transition-colors text-left"
+                              >
+                                <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-black shrink-0 overflow-hidden">
+                                  {p.photo_url
+                                    ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                                    : (p.display_name || '?').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-ink-primary truncate">{p.display_name || '(no name)'}</p>
+                                  <p className="text-[11px] text-ink-secondary truncate">{p.mobile || p.email || ''}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
