@@ -1040,14 +1040,7 @@ export default function AbonoShareApp() {
             New Request
           </button>
           
-          <button 
-            onClick={() => setActiveView('dashboard')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'dashboard' ? (darkMode ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-white text-brand shadow-sm border border-border-theme') : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
-          >
-            <CreditCard size={18} />
-            Ledger
-          </button>
-          <button 
+          <button
             onClick={() => setActiveView('active')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'active' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
           >
@@ -1075,6 +1068,13 @@ export default function AbonoShareApp() {
             <Search size={18} />
             Discover
           </button>
+          <button
+            onClick={() => setActiveView('dashboard')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeView === 'dashboard' ? (darkMode ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-white text-brand shadow-sm border border-border-theme') : 'text-ink-secondary hover:bg-surface hover:text-ink-primary'}`}
+          >
+            <CreditCard size={18} />
+            Ledger
+          </button>
           <div className="mt-auto pt-4 border-t border-border-theme">
             <button
               onClick={() => setActiveView('settings')}
@@ -1088,13 +1088,6 @@ export default function AbonoShareApp() {
 
         {/* Mobile Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border-theme px-2 pt-2 bottom-nav-safe flex justify-around items-center z-40">
-          <button
-            onClick={() => setActiveView('dashboard')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'dashboard' ? 'text-brand' : 'text-ink-secondary'}`}
-          >
-            <CreditCard size={22} />
-            <span className="text-[10px] font-bold uppercase tracking-wide">Ledger</span>
-          </button>
           <button
             onClick={() => setActiveView('active')}
             className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'active' ? 'text-brand' : 'text-ink-secondary'}`}
@@ -1122,6 +1115,13 @@ export default function AbonoShareApp() {
           >
             <Search size={22} />
             <span className="text-[10px] font-bold uppercase tracking-wide">Discover</span>
+          </button>
+          <button
+            onClick={() => setActiveView('dashboard')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] transition-colors ${activeView === 'dashboard' ? 'text-brand' : 'text-ink-secondary'}`}
+          >
+            <CreditCard size={22} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Ledger</span>
           </button>
           <button
             onClick={() => setActiveView('settings')}
