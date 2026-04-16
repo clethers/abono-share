@@ -1955,22 +1955,32 @@ export default function AbonoShareApp() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <div className="card-theme p-4 sm:p-6 glass">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Groups</p>
-                  <p className="text-xl sm:text-2xl font-black text-ink-primary">{groups.length}</p>
-                </div>
-                <div className="card-theme p-4 sm:p-6 glass">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Members</p>
-                  <p className="text-xl sm:text-2xl font-black text-ink-primary">
-                    {new Set(groups.flatMap(g => (g.group_members || []).map(gm => gm.user_id))).size}
-                  </p>
-                </div>
-                <div className="card-theme p-4 sm:p-6 glass">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Total Paid</p>
-                  <p className="text-xl sm:text-2xl font-black text-brand truncate">₱{transactions.reduce((acc, tx) => acc + Number(tx.amount || 0), 0).toLocaleString()}</p>
-                </div>
-              </div>
+              {(() => {
+                const unsettled = transactions.filter(tx => tx.status !== 'settled');
+                const owedToMe = unsettled.filter(tx => tx.payer_id === user.id).reduce((s, tx) => s + Number(tx.amount), 0);
+                const iOwe = unsettled.filter(tx => tx.recipient_id === user.id).reduce((s, tx) => s + Number(tx.amount), 0);
+                const settled = transactions.filter(tx => tx.status === 'settled').reduce((s, tx) => s + Number(tx.amount), 0);
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="card-theme p-4 sm:p-6 glass">
+                      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">My Groups</p>
+                      <p className="text-xl sm:text-2xl font-black text-ink-primary">{groups.length}</p>
+                    </div>
+                    <div className="card-theme p-4 sm:p-6 glass">
+                      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Active Bills</p>
+                      <p className="text-xl sm:text-2xl font-black text-ink-primary">{unsettled.length}</p>
+                    </div>
+                    <div className="card-theme p-4 sm:p-6 glass border-l-4 border-l-emerald-500">
+                      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">Owed to Me</p>
+                      <p className="text-xl sm:text-2xl font-black text-emerald-600 truncate">₱{owedToMe.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <div className="card-theme p-4 sm:p-6 glass border-l-4 border-l-red-400">
+                      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-1">I Owe</p>
+                      <p className="text-xl sm:text-2xl font-black text-red-500 truncate">₱{iOwe.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {groups.map(group => (
