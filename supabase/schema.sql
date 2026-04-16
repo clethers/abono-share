@@ -325,3 +325,21 @@ create policy "receipts: authed user can read"
 -- Columns added: groups.is_public, groups.total_settled
 -- Trigger: trg_update_group_total_settled
 -- RLS: groups SELECT opened to all authenticated; join_requests policies added
+
+-- ============================================================
+-- MIGRATION: auto-add creator as group member
+-- ============================================================
+
+create or replace function public.handle_group_creator_member()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.group_members (group_id, user_id)
+  values (new.id, new.created_by)
+  on conflict do nothing;
+  return new;
+end;
+$$;
+
+create trigger trg_auto_add_creator_as_member
+  after insert on public.groups
+  for each row execute function public.handle_group_creator_member();
