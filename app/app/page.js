@@ -2821,30 +2821,38 @@ export default function AbonoShareApp() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Who owes you?</label>
                     {newBillGroupId ? (
-                      /* Group selected → pick from members */
-                      <div className="grid grid-cols-2 gap-2">
-                        {(groups.find(g => g.id === newBillGroupId)?.group_members || [])
-                          .filter(gm => gm.user_id !== user.id)
-                          .map(gm => {
-                            const p = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
-                            const selected = newBillRecipientId === gm.user_id;
-                            return (
-                              <button
-                                key={gm.user_id}
-                                type="button"
-                                onClick={() => { setNewBillRecipientId(gm.user_id); setNewBillRecipient(''); }}
-                                className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selected ? 'border-brand bg-brand/5 shadow-sm' : 'border-border-theme bg-[#F8FAFC]/50 hover:border-brand/40'}`}
-                              >
-                                <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-black shrink-0 overflow-hidden">
-                                  {p.photo_url
-                                    ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
-                                    : (p.display_name || '?').slice(0, 2).toUpperCase()}
-                                </div>
-                                <span className={`text-sm font-bold truncate ${selected ? 'text-brand' : 'text-ink-primary'}`}>{p.display_name || gm.user_id}</span>
-                              </button>
-                            );
-                          })}
-                      </div>
+                      /* Group selected → pick from members, fallback to search if none */
+                      (() => {
+                        const otherMembers = (groups.find(g => g.id === newBillGroupId)?.group_members || []).filter(gm => gm.user_id !== user.id);
+                        if (otherMembers.length === 0) {
+                          return (
+                            <p className="text-sm text-ink-secondary py-2">No other members in this group yet. <button type="button" className="text-brand font-bold hover:underline" onClick={() => { setNewBillGroupId(''); setNewBillRecipientId(null); }}>Search instead</button></p>
+                          );
+                        }
+                        return (
+                          <div className="grid grid-cols-2 gap-2">
+                            {otherMembers.map(gm => {
+                              const p = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
+                              const selected = newBillRecipientId === gm.user_id;
+                              return (
+                                <button
+                                  key={gm.user_id}
+                                  type="button"
+                                  onClick={() => { setNewBillRecipientId(gm.user_id); setNewBillRecipient(''); }}
+                                  className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selected ? 'border-brand bg-brand/5 shadow-sm' : 'border-border-theme bg-[#F8FAFC]/50 hover:border-brand/40'}`}
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-black shrink-0 overflow-hidden">
+                                    {p.photo_url
+                                      ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                                      : (p.display_name || '?').slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <span className={`text-sm font-bold truncate ${selected ? 'text-brand' : 'text-ink-primary'}`}>{p.display_name || gm.user_id}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()
                     ) : (
                       /* No group → search */
                       <div className="relative">
