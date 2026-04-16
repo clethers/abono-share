@@ -435,21 +435,25 @@ export default function AbonoShareApp() {
 
     const userId = authData.user.id;
 
-    await updateProfile(supabase, userId, {
-      display_name: userData.displayName,
-      mobile,
-      email: userData.email,
-    });
+    try {
+      await updateProfile(supabase, userId, {
+        display_name: userData.displayName,
+        mobile,
+        email: userData.email,
+      });
 
-    if (userData.qrCodeFile) {
-      await uploadQrCode(supabase, userId, 'primary', userData.qrCodeFile);
+      if (userData.qrCodeFile) {
+        await uploadQrCode(supabase, userId, 'primary', userData.qrCodeFile);
+      }
+    } catch (err) {
+      console.error('Post-registration setup failed:', err);
+    } finally {
+      setIsRegistering(false);
+      setRegistrationStep(1);
+      setRegistrationData({ displayName: '', mobile: '', email: '', password: '' });
+      setRegistrationQrUrl('');
+      setLoading(false);
     }
-
-    setIsRegistering(false);
-    setRegistrationStep(1);
-    setRegistrationData({ displayName: '', mobile: '', email: '', password: '' });
-    setRegistrationQrUrl('');
-    setLoading(false);
   };
 
   const handleLogout = async () => {
