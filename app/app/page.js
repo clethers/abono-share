@@ -218,6 +218,7 @@ export default function AbonoShareApp() {
   const [mounted, setMounted] = useState(false);
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [allUsers, setAllUsers] = useState({});
   const [groups, setGroups] = useState([]);
@@ -1046,8 +1047,8 @@ export default function AbonoShareApp() {
           <div className="flex items-center gap-1.5">
             <span className="max-w-[100px] sm:max-w-none truncate text-ink-primary font-bold">{user.display_name?.split(' ')[0]}</span>
             <button
-              onClick={handleLogout}
-              className="w-9 h-9 flex items-center justify-center text-ink-secondary hover:text-ink-primary transition-colors"
+              onClick={() => setConfirmLogout(true)}
+              className="w-9 h-9 flex items-center justify-center text-ink-secondary hover:text-red-500 hover:scale-110 transition-all active:scale-95"
               aria-label="Logout"
             >
               <LogOut size={16} />
@@ -1533,7 +1534,7 @@ export default function AbonoShareApp() {
                                   setLoading(false);
                                 }
                               }}
-                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
                               disabled={loading}
                             >
                               Approve
@@ -1552,7 +1553,7 @@ export default function AbonoShareApp() {
                                   setLoading(false);
                                 }
                               }}
-                              className="px-3 py-1.5 bg-surface text-ink-secondary rounded-lg text-xs font-bold hover:bg-border-theme transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 bg-surface text-ink-secondary rounded-lg text-xs font-bold hover:bg-border-theme hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
                               disabled={loading}
                             >
                               Decline
@@ -2248,8 +2249,8 @@ export default function AbonoShareApp() {
               <section className="card-theme glass">
                 <div className="px-4 py-4">
                   <button
-                    onClick={() => supabase.auth.signOut()}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                    onClick={() => setConfirmLogout(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-red-500 hover:bg-red-50 hover:scale-[1.02] rounded-xl transition-all active:scale-[0.98]"
                   >
                     <LogOut size={16} />
                     Sign Out
@@ -2511,7 +2512,7 @@ export default function AbonoShareApp() {
                   {selectedTx.status === 'unpaid' && selectedTx.recipient_id === user.id && (
                     <button
                       onClick={() => handleSettleUp(selectedTx)}
-                      className="px-4 py-2 bg-brand text-white rounded-xl font-bold text-xs shadow-lg shadow-brand/20 hover:opacity-90 transition-all active:scale-[0.98]"
+                      className="px-4 py-2 bg-brand text-white rounded-xl font-bold text-xs shadow-lg shadow-brand/20 hover:bg-brand/90 hover:scale-105 hover:shadow-xl transition-all active:scale-[0.97]"
                     >
                       Settle Now
                     </button>
@@ -2519,7 +2520,7 @@ export default function AbonoShareApp() {
                   {selectedTx.status === 'pending' && selectedTx.payer_id === user.id && (
                     <button
                       onClick={() => handleVerifyPayment(selectedTx.id)}
-                      className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg hover:opacity-90 transition-all active:scale-[0.98]"
+                      className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg hover:bg-emerald-600 hover:scale-105 hover:shadow-xl transition-all active:scale-[0.97]"
                     >
                       Confirm Payment
                     </button>
@@ -2602,7 +2603,7 @@ export default function AbonoShareApp() {
                     {selectedTx.status === 'unpaid' && selectedTx.recipient_id === user.id && (
                       <button
                         onClick={() => handleSettleUp(selectedTx)}
-                        className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-[0.98]"
+                        className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:bg-brand/90 hover:shadow-2xl hover:shadow-brand/30 hover:scale-[1.01] transition-all active:scale-[0.98]"
                       >
                         Settle Now
                       </button>
@@ -2616,7 +2617,7 @@ export default function AbonoShareApp() {
                         </div>
                         <button 
                           onClick={() => handleVerifyPayment(selectedTx.id)}
-                          className="w-full py-4 bg-success text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-success/20 transition-all flex items-center justify-center gap-2"
+                          className="w-full py-4 bg-success text-white rounded-2xl font-bold hover:opacity-90 hover:shadow-2xl hover:shadow-success/30 hover:scale-[1.01] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                           <CheckCircle2 size={18} />
                           Confirm Receipt
@@ -3123,6 +3124,50 @@ export default function AbonoShareApp() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Sign Out Confirmation */}
+      <AnimatePresence>
+        {confirmLogout && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmLogout(false)}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-sm glass rounded-3xl shadow-2xl p-6 space-y-5"
+            >
+              <div className="flex items-center justify-center w-14 h-14 bg-red-50 rounded-2xl mx-auto">
+                <LogOut size={24} className="text-red-500" />
+              </div>
+              <div className="text-center space-y-1.5">
+                <h3 className="text-lg font-black text-ink-primary">Sign out?</h3>
+                <p className="text-sm text-ink-secondary">You&apos;ll need to sign back in to access your account.</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmLogout(false)}
+                  className="flex-1 py-3 rounded-2xl border border-border-theme text-sm font-bold text-ink-secondary hover:bg-surface hover:scale-[1.02] transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setConfirmLogout(false); handleLogout(); }}
+                  className="flex-1 py-3 rounded-2xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 hover:scale-[1.02] transition-all active:scale-[0.98] shadow-lg shadow-red-500/20"
+                >
+                  Sign Out
+                </button>
               </div>
             </motion.div>
           </div>
