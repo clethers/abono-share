@@ -46,6 +46,7 @@ import {
   removeGroupMember,
   findProfileByMobile,
   findProfile,
+  renameGroup,
   computeBalances,
   getPublicGroups,
   applyToGroup,
@@ -252,6 +253,9 @@ export default function AbonoShareApp() {
   const [newGroupName, setNewGroupName] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [isGroupSettings, setIsGroupSettings] = useState(false);
+  const [groupRenameValue, setGroupRenameValue] = useState('');
+  const [groupSettingsError, setGroupSettingsError] = useState('');
   const [newMemberId, setNewMemberId] = useState('');
   const [viewingProfile, setViewingProfile] = useState(null);
   const [viewingProfileQrUrl, setViewingProfileQrUrl] = useState(null);
@@ -604,6 +608,26 @@ export default function AbonoShareApp() {
     }
     setNewMemberId('');
     setIsAddingMember(false);
+  };
+
+  const handleRenameGroup = async (e) => {
+    e.preventDefault();
+    if (guardDemo()) return;
+    if (!groupRenameValue.trim() || !selectedGroup) return;
+    setGroupSettingsError('');
+    setLoading(true);
+    try {
+      await renameGroup(supabase, selectedGroup.id, groupRenameValue.trim());
+      const refreshed = await getGroups(supabase);
+      setGroups(refreshed);
+      const updated = refreshed.find(g => g.id === selectedGroup.id);
+      setSelectedGroup(updated);
+      setGroupRenameValue(updated.name);
+    } catch (err) {
+      setGroupSettingsError(err.message || 'Failed to rename group.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRemoveMember = async (memberId) => {
@@ -1288,17 +1312,28 @@ export default function AbonoShareApp() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setActiveView('groups')}
-                  className="p-2 hover:bg-white rounded-xl transition-all text-ink-secondary hover:text-ink-primary"
-                >
-                  <ArrowRight className="rotate-180" size={20} />
-                </button>
-                <div>
-                  <h2 className="text-2xl font-black text-ink-primary">{selectedGroup.name}</h2>
-                  <p className="text-xs text-ink-secondary font-bold uppercase tracking-widest mt-1">Group Management</p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveView('groups')}
+                    className="p-2 hover:bg-white rounded-xl transition-all text-ink-secondary hover:text-ink-primary"
+                  >
+                    <ArrowRight className="rotate-180" size={20} />
+                  </button>
+                  <div>
+                    <h2 className="text-2xl font-black text-ink-primary">{selectedGroup.name}</h2>
+                    <p className="text-xs text-ink-secondary font-bold uppercase tracking-widest mt-1">Group Management</p>
+                  </div>
                 </div>
+                {selectedGroup.created_by === user.id && (
+                  <button
+                    onClick={() => { setGroupRenameValue(selectedGroup.name); setGroupSettingsError(''); setIsGroupSettings(true); }}
+                    className="p-2 hover:bg-white rounded-xl transition-all text-ink-secondary hover:text-ink-primary"
+                    title="Group Settings"
+                  >
+                    <Settings size={20} />
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -1614,6 +1649,105 @@ export default function AbonoShareApp() {
                           </button>
                         </div>
                       </form>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* Group Settings Modal */}
+              <AnimatePresence>
+                {isGroupSettings && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setIsGroupSettings(false)}
+                      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    />
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.9, opacity: 0 }}
+                      className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-8 mx-2 space-y-6"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+                          <Settings size={20} />
+                        </div>
+                        <h3 className="text-xl font-black text-ink-primary">Group Settings</h3>
+                      </div>
+
+                      {/* Rename */}
+                      <form onSubmit={handleRenameGroup} className="space-y-3">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Group Name</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            required
+                            value={groupRenameValue}
+                            onChange={(e) => setGroupRenameValue(e.target.value)}
+                            className="flex-1 px-4 py-3 bg-[#F8FAFC]/50 border border-border-theme rounded-xl focus:outline-none focus:border-brand transition-all text-sm font-medium"
+                          />
+                          <button
+                            type="submit"
+                            disabled={loading || groupRenameValue.trim() === selectedGroup.name}
+                            className="px-4 py-3 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20 disabled:opacity-40 transition-all"
+                          >
+                            Save
+                          </button>
+                        </div>
+                        {groupSettingsError && (
+                          <p className="text-xs font-bold text-red-500">{groupSettingsError}</p>
+                        )}
+                      </form>
+
+                      {/* Members */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Members</p>
+                          <button
+                            onClick={() => { setIsGroupSettings(false); setIsAddingMember(true); }}
+                            className="text-brand text-[10px] font-bold uppercase tracking-widest hover:underline"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                        <div className="space-y-2 max-h-52 overflow-y-auto">
+                          {selectedGroup.group_members.map(gm => {
+                            const profile = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
+                            return (
+                              <div key={gm.user_id} className="flex items-center justify-between p-3 bg-[#F8FAFC]/50 rounded-xl border border-border-theme">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-bold">
+                                    {(profile.display_name || gm.user_id).slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-ink-primary">{gm.user_id === user.id ? 'You' : (profile.display_name || gm.user_id)}</p>
+                                    {profile.mobile && <p className="text-[10px] text-ink-secondary">{profile.mobile}</p>}
+                                  </div>
+                                </div>
+                                {gm.user_id !== user.id && (
+                                  <button
+                                    onClick={() => handleRemoveMember(gm.user_id)}
+                                    disabled={loading}
+                                    className="p-1.5 text-ink-secondary hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-40"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsGroupSettings(false)}
+                        className="w-full py-3 text-sm font-bold text-ink-secondary hover:bg-gray-50 rounded-xl transition-colors"
+                      >
+                        Close
+                      </button>
                     </motion.div>
                   </div>
                 )}
