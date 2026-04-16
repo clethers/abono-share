@@ -1037,7 +1037,7 @@ export default function AbonoShareApp() {
             className="mb-6 w-full py-4 bg-brand text-white rounded-2xl font-bold text-sm shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_20px_30px_-10px_rgba(37,99,235,0.5)] hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/10"
           >
             <Plus size={18} strokeWidth={3} />
-            New Request
+            New Bill
           </button>
           
           <button
@@ -2946,7 +2946,7 @@ export default function AbonoShareApp() {
                       disabled={loading}
                       className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-xl shadow-brand/20 active:scale-[0.98] disabled:opacity-50"
                     >
-                      {loading ? 'Creating…' : 'Create Request'}
+                      {loading ? 'Creating…' : 'Create Bill'}
                     </button>
                   </div>
                 </form>
