@@ -2482,7 +2482,7 @@ export default function AbonoShareApp() {
               className="max-w-4xl mx-auto space-y-6"
             >
               <div className="flex items-center justify-between mb-2">
-                <button 
+                <button
                   onClick={() => setActiveView('dashboard')}
                   className="flex items-center gap-2 text-xs font-bold text-ink-secondary hover:text-brand transition-colors"
                 >
@@ -2492,6 +2492,22 @@ export default function AbonoShareApp() {
                 <div className="flex gap-2 items-center">
                   {selectedTx.category && <CategoryTag category={selectedTx.category} />}
                   <StatusBadge status={selectedTx.status} />
+                  {selectedTx.status === 'unpaid' && selectedTx.payer_id === user.id && (
+                    <button
+                      onClick={() => handleSettleUp(selectedTx)}
+                      className="px-4 py-2 bg-brand text-white rounded-xl font-bold text-xs shadow-lg shadow-brand/20 hover:opacity-90 transition-all active:scale-[0.98]"
+                    >
+                      Settle Now
+                    </button>
+                  )}
+                  {selectedTx.status === 'pending' && selectedTx.recipient_id === user.id && (
+                    <button
+                      onClick={() => handleVerifyPayment(selectedTx.id)}
+                      className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg hover:opacity-90 transition-all active:scale-[0.98]"
+                    >
+                      Confirm Payment
+                    </button>
+                  )}
                 </div>
               </div>
 
