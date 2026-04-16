@@ -245,6 +245,7 @@ export default function AbonoShareApp() {
   const [newBillDescription, setNewBillDescription] = useState('');
   const [newBillGroupId, setNewBillGroupId] = useState('');
   const [newBillCategory, setNewBillCategory] = useState('food');
+  const [newBillError, setNewBillError] = useState('');
 
   // Form State for New Group
   const [newGroupName, setNewGroupName] = useState('');
@@ -524,12 +525,12 @@ export default function AbonoShareApp() {
     e.preventDefault();
     if (guardDemo()) return;
     if (!newBillAmount || !newBillRecipient) return;
+    setNewBillError('');
     setLoading(true);
     try {
       const recipientProfile = await findProfileByMobile(supabase, newBillRecipient);
       if (!recipientProfile) {
-        console.error('No user found with that mobile number');
-        setLoading(false);
+        setNewBillError('No user found with that mobile number.');
         return;
       }
       await createTransaction(supabase, {
@@ -542,17 +543,18 @@ export default function AbonoShareApp() {
       });
       const refreshed = await getTransactions(supabase, user.id);
       setTransactions(refreshed);
+      setNewBillAmount('');
+      setNewBillRecipient('');
+      setNewBillDescription('');
+      setNewBillGroupId('');
+      setNewBillCategory('food');
+      setNewBillError('');
+      setActiveView('active');
     } catch (err) {
-      console.error('Failed to create bill:', err);
+      setNewBillError(err.message || 'Failed to create bill. Please try again.');
     } finally {
       setLoading(false);
     }
-    setNewBillAmount('');
-    setNewBillRecipient('');
-    setNewBillDescription('');
-    setNewBillGroupId('');
-    setNewBillCategory('food');
-    setActiveView('active');
   };
 
   const createNewBill = () => {
@@ -2674,12 +2676,17 @@ export default function AbonoShareApp() {
                     />
                   </div>
 
+                  {newBillError && (
+                    <p className="text-sm font-bold text-red-500 text-center">{newBillError}</p>
+                  )}
+
                   <div className="pt-4 pb-2">
                     <button
                       type="submit"
-                      className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-xl shadow-brand/20 active:scale-[0.98]"
+                      disabled={loading}
+                      className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-xl shadow-brand/20 active:scale-[0.98] disabled:opacity-50"
                     >
-                      Create Request
+                      {loading ? 'Creating…' : 'Create Request'}
                     </button>
                   </div>
                 </form>
