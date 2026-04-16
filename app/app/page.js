@@ -536,28 +536,60 @@ export default function AbonoShareApp() {
     e.preventDefault();
     if (guardDemo()) return;
     if (!newBillAmount) { setNewBillError('Please enter an amount.'); return; }
-    if (!newBillRecipientId && !newBillRecipient) { setNewBillError('Please select or search for who owes you.'); return; }
     setNewBillError('');
     setLoading(true);
     try {
-      let recipientId = newBillRecipientId;
-      if (!recipientId) {
-        const recipientProfile = await findProfile(supabase, newBillRecipient);
-        if (!recipientProfile) {
-          setNewBillError('No user found. Check the name, mobile, or email.');
+      const total = parseFloat(newBillAmount);
+      const desc = newBillDescription || 'Split Bill';
+
+      if (newBillGroupId) {
+        // Split equally among all other group members
+        const group = groups.find(g => g.id === newBillGroupId);
+        const otherMembers = (group?.group_members || []).filter(gm => gm.user_id !== user.id);
+        if (otherMembers.length === 0) {
+          setNewBillError('This group has no other members to split with.');
           setLoading(false);
           return;
         }
-        recipientId = recipientProfile.id;
+        const totalMembers = otherMembers.length + 1; // include payer
+        const splitAmount = parseFloat((total / totalMembers).toFixed(2));
+        await Promise.all(otherMembers.map(gm =>
+          createTransaction(supabase, {
+            payer_id: user.id,
+            recipient_id: gm.user_id,
+            group_id: newBillGroupId,
+            description: desc,
+            amount: splitAmount,
+            category: newBillCategory,
+          })
+        ));
+      } else {
+        // Personal bill — single recipient
+        if (!newBillRecipientId && !newBillRecipient) {
+          setNewBillError('Please select or search for who owes you.');
+          setLoading(false);
+          return;
+        }
+        let recipientId = newBillRecipientId;
+        if (!recipientId) {
+          const recipientProfile = await findProfile(supabase, newBillRecipient);
+          if (!recipientProfile) {
+            setNewBillError('No user found. Check the name, mobile, or email.');
+            setLoading(false);
+            return;
+          }
+          recipientId = recipientProfile.id;
+        }
+        await createTransaction(supabase, {
+          payer_id: user.id,
+          recipient_id: recipientId,
+          group_id: null,
+          description: desc,
+          amount: total,
+          category: newBillCategory,
+        });
       }
-      await createTransaction(supabase, {
-        payer_id: user.id,
-        recipient_id: recipientId,
-        group_id: newBillGroupId || null,
-        description: newBillDescription || 'Split Bill',
-        amount: parseFloat(newBillAmount),
-        category: newBillCategory,
-      });
+
       const refreshed = await getTransactions(supabase, user.id);
       setTransactions(refreshed);
       setNewBillAmount('');
@@ -2819,85 +2851,89 @@ export default function AbonoShareApp() {
                     </select>
                   </div>
 
-                  {/* Recipient */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Who owes you?</label>
-
-                    {/* Quick-pick chips from group members */}
-                    {newBillGroupId && (() => {
-                      const others = (groups.find(g => g.id === newBillGroupId)?.group_members || []).filter(gm => gm.user_id !== user.id);
-                      if (others.length === 0) return null;
+                  {/* Recipient — split preview if group, search if personal */}
+                  {newBillGroupId ? (
+                    (() => {
+                      const group = groups.find(g => g.id === newBillGroupId);
+                      const others = (group?.group_members || []).filter(gm => gm.user_id !== user.id);
+                      const totalMembers = others.length + 1;
+                      const splitAmount = newBillAmount ? (parseFloat(newBillAmount) / totalMembers).toFixed(2) : '—';
                       return (
-                        <div className="flex flex-wrap gap-2 pb-1">
-                          {others.map(gm => {
-                            const p = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
-                            const selected = newBillRecipientId === gm.user_id;
-                            return (
-                              <button
-                                key={gm.user_id}
-                                type="button"
-                                onClick={() => { setNewBillRecipientId(gm.user_id); setNewBillRecipient(p.display_name || ''); setBillSearchResults([]); }}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-bold transition-all ${selected ? 'border-brand bg-brand text-white shadow-sm' : 'border-border-theme bg-white text-ink-primary hover:border-brand/60'}`}
-                              >
-                                <div className="w-5 h-5 rounded-full bg-brand/20 flex items-center justify-center text-[8px] font-black overflow-hidden shrink-0">
-                                  {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : (p.display_name || '?').slice(0, 1).toUpperCase()}
-                                </div>
-                                {p.display_name || gm.user_id}
-                              </button>
-                            );
-                          })}
+                        <div className="bg-brand/5 border border-brand/20 rounded-2xl p-4 space-y-3">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-brand">Equal Split</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-ink-secondary font-medium">{totalMembers} people (including you)</span>
+                            <span className="text-lg font-black text-brand">₱{splitAmount} each</span>
+                          </div>
+                          {others.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 pt-1 border-t border-brand/10">
+                              {others.map(gm => {
+                                const p = gm.profiles || { id: gm.user_id, display_name: gm.user_id };
+                                return (
+                                  <span key={gm.user_id} className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-brand/20 text-xs font-bold text-ink-primary">
+                                    <span className="w-4 h-4 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[8px] font-black">{(p.display_name || '?').slice(0, 1).toUpperCase()}</span>
+                                    {p.display_name || gm.user_id}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-red-500 font-bold pt-1 border-t border-brand/10">No other members in this group yet.</p>
+                          )}
                         </div>
                       );
-                    })()}
-
-                    {/* Always-visible search */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        value={newBillRecipient}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setNewBillRecipient(val);
-                          if (!val) setNewBillRecipientId(null);
-                          clearTimeout(billSearchTimer);
-                          if (val.length < 2) { setBillSearchResults([]); return; }
-                          const t = setTimeout(async () => {
-                            const results = await searchProfiles(supabase, val, [user.id]);
-                            setBillSearchResults(results);
-                          }, 300);
-                          setBillSearchTimer(t);
-                        }}
-                        onBlur={() => setTimeout(() => setBillSearchResults([]), 150)}
-                        placeholder={newBillRecipientId ? '✓ Selected — or search for someone else' : 'Search by name, mobile, or email…'}
-                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all text-sm font-medium ${newBillRecipientId ? 'bg-brand/5 border-brand text-brand' : 'bg-[#F8FAFC]/50 border-border-theme focus:border-brand'}`}
-                      />
-                      {billSearchResults.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-border-theme rounded-2xl shadow-xl z-10 overflow-hidden">
-                          {billSearchResults.map(p => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setNewBillRecipientId(p.id);
-                                setNewBillRecipient(p.display_name || p.mobile || p.email || '');
-                                setBillSearchResults([]);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 transition-colors text-left"
-                            >
-                              <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-black shrink-0 overflow-hidden">
-                                {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : (p.display_name || '?').slice(0, 2).toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-ink-primary truncate">{p.display_name || '(no name)'}</p>
-                                <p className="text-[11px] text-ink-secondary truncate">{p.mobile || p.email || ''}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    })()
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Who owes you?</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          value={newBillRecipient}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewBillRecipient(val);
+                            if (!val) setNewBillRecipientId(null);
+                            clearTimeout(billSearchTimer);
+                            if (val.length < 2) { setBillSearchResults([]); return; }
+                            const t = setTimeout(async () => {
+                              const results = await searchProfiles(supabase, val, [user.id]);
+                              setBillSearchResults(results);
+                            }, 300);
+                            setBillSearchTimer(t);
+                          }}
+                          onBlur={() => setTimeout(() => setBillSearchResults([]), 150)}
+                          placeholder={newBillRecipientId ? '✓ Selected' : 'Search by name, mobile, or email…'}
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all text-sm font-medium ${newBillRecipientId ? 'bg-brand/5 border-brand text-brand' : 'bg-[#F8FAFC]/50 border-border-theme focus:border-brand'}`}
+                        />
+                        {billSearchResults.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-border-theme rounded-2xl shadow-xl z-10 overflow-hidden">
+                            {billSearchResults.map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setNewBillRecipientId(p.id);
+                                  setNewBillRecipient(p.display_name || p.mobile || p.email || '');
+                                  setBillSearchResults([]);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 transition-colors text-left"
+                              >
+                                <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-black shrink-0 overflow-hidden">
+                                  {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : (p.display_name || '?').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-ink-primary truncate">{p.display_name || '(no name)'}</p>
+                                  <p className="text-[11px] text-ink-secondary truncate">{p.mobile || p.email || ''}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-ink-secondary">Category</label>
