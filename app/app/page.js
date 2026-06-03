@@ -383,6 +383,8 @@ export default function AbonoShareApp() {
       } else {
         setLoading(false);
       }
+    }).catch(() => {
+      if (active) setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
