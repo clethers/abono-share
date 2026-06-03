@@ -215,6 +215,8 @@ function GroupScreen() {
   );
 }
 
+export const revalidate = 3600;
+
 export default async function LandingPage() {
   let topGroups = [];
   try {
